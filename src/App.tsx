@@ -1,7 +1,5 @@
 import { useState, useEffect } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import { Sidebar, Menu, MenuItem, SubMenu } from 'react-pro-sidebar';
+import { Sidebar, Menu, MenuItem } from 'react-pro-sidebar';
 import './App.css'
 
 const isInside = (point: any, rect: any) => point.x > rect.left && point.x < rect.right && point.y > rect.top && point.y < rect.bottom;
@@ -9,16 +7,16 @@ const isInside = (point: any, rect: any) => point.x > rect.left && point.x < rec
 const months = ['January', 'February', 'March', "April", "May", "June", "July", "August", "september", "October", "November", "December"]
 const shifts = [3,6,6,2,4,0,2,5,1,3,6,1]
 function App() {
-  const [collapsed, setCollapsed] = useState(0)
-  const [month, setMonth] = useState(1)
-  const [counter, setCounter] = useState(0)
+  const [collapsed, _] = useState<any>(0)
+  const [month, setMonth] = useState<any>(1)
+  const [counter, setCounter] = useState<any>(0)
 
-  const [shapes, setShapes] = useState([])
-  const [notes, setNotes] = useState(null)
+  const [shapes, setShapes] = useState<any>([])
+  const [notes, setNotes] = useState<any>(null)
 
-  const [addShapes, setAddShapes] = useState(false)
-  const [addingXShape, setAddingXShape] = useState(null)
-  const [addingYShape, setAddingYShape] = useState(null)
+  const [addShapes, setAddShapes] = useState<any>(false)
+  const [addingXShape, setAddingXShape] = useState<any>(null)
+  const [addingYShape, setAddingYShape] = useState<any>(null)
 
   function clicked(evt: any){
       var e = evt.target;
@@ -44,7 +42,7 @@ function App() {
       // alert(x + " " + y)
   }  
 
-  const [dates, setDates] = useState([])
+  const [dates, setDates] = useState<any>([])
 
   function daysInMonth(month: any, year: any) {
       return new Date(year, month, 0).getDate();
@@ -107,17 +105,17 @@ function App() {
     setAddShapes(false)
   }
 
-  const addRebound = () => {
-    setCounter(counter+1)
-    const tempShapes = shapes
+  // const addRebound = () => {
+  //   setCounter(counter+1)
+  //   const tempShapes = shapes
 
-    tempShapes.push(
-      <polygon points="250,50 350,20 450,50 350,80" style={{stroke: 'purple', fill:'transparent'}} />
-    )
-    setShapes(tempShapes)
-          setAddShapes(false)
+  //   tempShapes.push(
+  //     <polygon points="250,50 350,20 450,50 350,80" style={{stroke: 'purple', fill:'transparent'}} />
+  //   )
+  //   setShapes(tempShapes)
+  //         setAddShapes(false)
 
-  }
+  // }
   
   // const addWindow = () => {
   //   setCounter(counter+1)
@@ -133,17 +131,17 @@ function App() {
 
   // }
 
-  const addTree = () => {
-    setCounter(counter+1)
+  // const addTree = () => {
+  //   setCounter(counter+1)
 
-    const tempShapes = shapes
-     tempShapes.push(
-      <polygon points="950,30 850,150 850,450 950,550 1050,450 1050,150 " style={{stroke: 'purple', fill:'transparent'}} />
-    )
-    setShapes(tempShapes)
-    setAddShapes(false)
+  //   const tempShapes = shapes
+  //    tempShapes.push(
+  //     <polygon points="950,30 850,150 850,450 950,550 1050,450 1050,150 " style={{stroke: 'purple', fill:'transparent'}} />
+  //   )
+  //   setShapes(tempShapes)
+  //   setAddShapes(false)
 
-  }
+  // }
 
   const saveNotes = () => {
     console.log(notes)
@@ -189,9 +187,9 @@ function App() {
     </div> }
     
      <br/>
-      <button  onClick={() => setMonth(month-1)>prev month</button>
+      <button  onClick={() => setMonth(month!-1)}>prev month</button>
       &nbsp;&nbsp;
-      <button onClick={() => setMonth(month+1)}>next month</button>
+      <button onClick={() => setMonth(month!+1)}>next month</button>
      <br/>
      <br/>
      <br/>
@@ -204,7 +202,7 @@ function App() {
     </defs>
     {dates}
     <rect width="100%" height="100%" fill="url(#grid)"/>
-      {shapes.map((shape) => shape)}
+      {shapes?.map((shape: any) => shape)}
 
     </svg>
         </div>
