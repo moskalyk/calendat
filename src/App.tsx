@@ -6,9 +6,13 @@ const isInside = (point: any, rect: any) => point.x > rect.left && point.x < rec
 
 const months = ['January', 'February', 'March', "April", "May", "June", "July", "August", "september", "October", "November", "December"]
 const shifts = [3,6,6,2,4,0,2,5,1,3,6,1]
+const priorMonthShifts = [9,12,13,8,10,6,8,11,7,9,12,7]
+
 function App() {
   const [collapsed, _] = useState<any>(0)
-  const [month, setMonth] = useState<any>(1)
+  const currentDate = new Date();
+  const currentMonth = currentDate.getMonth()+1
+  const [month, setMonth] = useState<any>(currentMonth)
   const [counter, setCounter] = useState<any>(0)
 
   const [shapes, setShapes] = useState<any>([])
@@ -51,7 +55,12 @@ function App() {
   useEffect(() => {
     const dateNumbers = []
     let index = 0
-    let days = daysInMonth(month-1, 2025)-10;
+    let days;
+    console.log('month', month)
+
+    // a hack, but a small one
+    days = daysInMonth(month-1, 2024)-priorMonthShifts[month-1]
+
     let shift = shifts[month-1]
     for(var i = ((daysInMonth(month-1, 2025))+(-6-shift)); i <= (daysInMonth(month-1, 2025)); i++) {
       console.log(i)
@@ -87,8 +96,25 @@ function App() {
   }, [dates, month, shapes, counter, addShapes])
 
   useEffect(() => {
+    const polygons = JSON.parse(localStorage.getItem(month)!)
+    console.log(polygons)
+      setShapes([])
 
-  }, [notes])
+    if(!polygons){
+      setShapes([])
+      localStorage.setItem(month, JSON.stringify([]))
+    }else {
+
+      const tempShapes = []
+      for(let i = 0; i < polygons.length; i++){
+        tempShapes.push(
+          <polygon points={polygons[i]} style={{stroke: 'purple', fill:'transparent'}} />
+        )
+      }
+
+      setShapes(tempShapes)
+    }
+  }, [notes, month])
 
   const addWindow = () => {
     const tempShapes = shapes
@@ -100,6 +126,18 @@ function App() {
     tempShapes.push(
       <polygon points={`${50+100*addingXShape+","+(30+(addingYShape)*100)} ${150+100*addingXShape+","+(150+(addingYShape)*100)} ${50+100*(addingXShape-1)+","+(150+(addingYShape)*100)}`} style={{stroke: 'purple', fill:'transparent'}} />
     )
+
+    console.log(tempShapes)
+
+    const polygons = JSON.parse(localStorage.getItem(month)!)
+  
+    polygons.push(`${50+100*addingXShape+","+(30+(addingYShape)*100)} ${150+100*addingXShape+","+(150+(addingYShape)*100)} ${50+100*(addingXShape-1)+","+(150+(addingYShape)*100)}`)
+    
+    console.log(polygons)
+
+    console.log(polygons==tempShapes)
+
+    localStorage.setItem(month,JSON.stringify(polygons))
 
     setShapes(tempShapes)
     setAddShapes(false)
@@ -189,7 +227,7 @@ function App() {
      <br/>
       <button  onClick={() => setMonth(month!-1)}>prev month</button>
       &nbsp;&nbsp;
-      <button onClick={() => setMonth(month!+1)}>next month</button>
+      <button onClick={() => {setMonth(month!+1)}}>next month</button>
      <br/>
      <br/>
      <br/>
