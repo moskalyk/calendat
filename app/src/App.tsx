@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react'
-import { Sidebar, Menu, MenuItem } from 'react-pro-sidebar';
 import './App.css'
 import { io } from "socket.io-client";
-import * as ethers from 'ethers';
 
 const isInside = (point: any, rect: any) => point.x > rect.left && point.x < rect.right && point.y > rect.top && point.y < rect.bottom;
 
@@ -12,7 +10,6 @@ const priorMonthShifts = [9,12,13,8,10,6,8,11,7,9,12,7]
 
 function App() {
   const [menu, setMenu] = useState(0)
-  const [collapsed, _] = useState<any>(0)
   const currentDate = new Date();
   const currentMonth = currentDate.getMonth()+1
   const [month, setMonth] = useState<any>(currentMonth)
@@ -25,7 +22,7 @@ function App() {
   const [addingXShape, setAddingXShape] = useState<any>(null)
   const [addingYShape, setAddingYShape] = useState<any>(null)
 
-  const [canDelete, setCanDelete] = useState(null)
+  const [canDelete, setCanDelete] = useState<any>(null)
 
   function clicked(evt: any){
       var e = evt.target;
@@ -58,27 +55,6 @@ function App() {
       }
       }
   }  
-
-  function is_in_triangle (px: any,py: any,ax: any,ay: any,bx: any,by: any,cx: any, cy: any){
-    //credit: http://www.blackpawn.com/texts/pointinpoly/default.html
-
-    var v0 = [cx-ax,cy-ay];
-    var v1 = [bx-ax,by-ay];
-    var v2 = [px-ax,py-ay];
-
-    var dot00 = (v0[0]*v0[0]) + (v0[1]*v0[1]);
-    var dot01 = (v0[0]*v1[0]) + (v0[1]*v1[1]);
-    var dot02 = (v0[0]*v2[0]) + (v0[1]*v2[1]);
-    var dot11 = (v1[0]*v1[0]) + (v1[1]*v1[1]);
-    var dot12 = (v1[0]*v2[0]) + (v1[1]*v2[1]);
-
-    var invDenom = 1/ (dot00 * dot11 - dot01 * dot01);
-
-    var u = (dot11 * dot02 - dot01 * dot12) * invDenom;
-    var v = (dot00 * dot12 - dot01 * dot02) * invDenom;
-
-    return ((u >= 0) && (v >= 0) && (u + v < 1));
-}
 
   const [dates, setDates] = useState<any>([])
 
@@ -151,6 +127,7 @@ function App() {
       const tempShapes = []
       for(let i = 0; i < polygons.length; i++){
         tempShapes.push(
+          //@ts-ignore
           <polygon key={i} id={i} points={polygons[i]} style={{stroke: 'purple', fill:'transparent'}} />
         )
       }
@@ -167,6 +144,7 @@ function App() {
     console.log(addingYShape)
 
     tempShapes.push(
+          //@ts-ignore
       <polygon id={tempShapes.length-1} points={`${50+100*addingXShape+","+(30+(addingYShape)*100)} ${150+100*addingXShape+","+(150+(addingYShape)*100)} ${50+100*(addingXShape-1)+","+(150+(addingYShape)*100)}`} style={{stroke: 'purple', fill:'transparent'}} />
     )
 
@@ -230,8 +208,8 @@ function App() {
     setAddShapes(null)
   }
 
-  const [allowlist, setAllowlist] = useState([{id: 0, name: 'morgan'},{ id: 1, name: '~zod'}])
-  const [newUser, setNewUser] = useState(null)
+  const [allowlist, setAllowlist] = useState<any>([{id: 0, name: 'morgan'},{ id: 1, name: '~zod'}])
+  const [newUser, setNewUser] = useState<any>(null)
 
   useEffect(() => {
 
@@ -249,9 +227,9 @@ function App() {
 
       
       <div>
-        <span id="menu" style={{padding: '20px', cursor: 'pointer', textDecoration: menu == 0 && 'underline'}} onClick={() => setMenu(0)}><span style={{textDecoration: 'line-through'}}>U</span> calenda(t)</span>
-        <span id="menu" style={{padding: '20px',  cursor: 'pointer', textDecoration: menu == 1 &&'underline'}}onClick={() => setMenu(1)}>⇆ sharing (soon)</span>
-        <span id="menu" style={{padding: '20px',  cursor: 'pointer', textDecoration: menu == 2 && 'underline'}}onClick={() => setMenu(2)}>⚔ allowlist</span>
+        <span id="menu" style={{padding: '20px', cursor: 'pointer', textDecoration: menu == 0 ? 'underline': ''}} onClick={() => setMenu(0)}><span style={{textDecoration: 'line-through'}}>U</span> calenda(t)</span>
+        <span id="menu" style={{padding: '20px',  cursor: 'pointer', textDecoration: menu == 1 ?'underline': ''}}onClick={() => setMenu(1)}>⇆ sharing (soon)</span>
+        <span id="menu" style={{padding: '20px',  cursor: 'pointer', textDecoration: menu == 2 ? 'underline': ''}}onClick={() => setMenu(2)}>⚔ allowlist</span>
       </div>
       <br/>
       {
@@ -261,11 +239,11 @@ function App() {
           <input style={{padding: '7px', width: '232px', textAlign: 'center'}} placeholder="user.eth, user@domain, ~zod ..." onChange={(evt: any) => setNewUser(evt.target.value)}></input>
           <br/>
           <br/>
-          <button onClick={() => {console.log(newUser);setAllowlist((allowlist) => [...allowlist, {name: newUser, id: allowlist.length}]); setNewUser(null)}}>enter</button>
+          <button onClick={() => {console.log(newUser);setAllowlist((allowlist: any) => [...allowlist, {name: newUser, id: allowlist.length}]); setNewUser(null)}}>enter</button>
           <br/>
 
           <ul>{allowlist.map((person: any, id: any) => {
-            return <li style={{textAlign: 'center', width: '232px', padding: '5px'}}>{person.name} <span id='x-remove' style={{float: 'right', cursor: 'pointer'}} onClick={() => setAllowlist((prevItems) => prevItems.filter((item) => item.id !== id))}>❌</span></li>
+            return <li style={{textAlign: 'center', width: '232px', padding: '5px'}}>{person.name} <span id='x-remove' style={{float: 'right', cursor: 'pointer'}} onClick={() => setAllowlist((prevItems: any) => prevItems.filter((item: any) => item.id !== id))}>❌</span></li>
           })}</ul>
         </div>
       }
@@ -276,7 +254,7 @@ function App() {
           <input style={{padding: '7px', width: '232px', textAlign: 'center'}} placeholder="user.eth, user@domain, ~zod ..." onChange={(evt: any) => setNewUser(evt.target.value)}></input>
           &nbsp;&nbsp;
           
-          <button onClick={() => {console.log(newUser);setAllowlist((allowlist) => [...allowlist, {name: newUser, id: allowlist.length}]); setNewUser(null)}}>enter</button>
+          <button onClick={() => {console.log(newUser);setAllowlist((allowlist: any) => [...allowlist, {name: newUser, id: allowlist.length}]); setNewUser(null)}}>enter</button>
           <br/>
           <br/>
           <p style={{color: 'lime'}}>one-time shared</p>
@@ -302,11 +280,11 @@ function App() {
           <br/>
           {addShapes && <hr/>}
           <br/>
-          {canDelete && <><br/><button style={{background: 'red'}} onClick={() => {setCanDelete(false);setShapes((prevItems) => prevItems.filter((item) => {
+          {canDelete && <><br/><button style={{background: 'red'}} onClick={() => {setCanDelete(false);setShapes((prevItems: any) => prevItems.filter((item: any) => {
             if(item.key === canDelete){
-              let polygons = JSON.parse(localStorage.getItem(month))
+              let polygons = JSON.parse(localStorage.getItem(month)!)
               delete polygons[item.key]
-              polygons = polygons.filter((el) => el == null)
+              polygons = polygons.filter((el: any) => el == null)
               localStorage.setItem(month, JSON.stringify(polygons))
             }
             return item.key !== canDelete
