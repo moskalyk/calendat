@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { Sidebar, Menu, MenuItem } from 'react-pro-sidebar';
 import './App.css'
+import { io } from "socket.io-client";
+const socket = io("http://localhost:3000");
 
 const isInside = (point: any, rect: any) => point.x > rect.left && point.x < rect.right && point.y > rect.top && point.y < rect.bottom;
 
@@ -21,6 +23,12 @@ function App() {
   const [addShapes, setAddShapes] = useState<any>(false)
   const [addingXShape, setAddingXShape] = useState<any>(null)
   const [addingYShape, setAddingYShape] = useState<any>(null)
+
+  useEffect(() => {
+    socket.on("connect", () => {
+      console.log(socket.id); // x8WIv7-mJelg7on_ALbx
+    });
+  }, [])
 
   function clicked(evt: any){
       var e = evt.target;
@@ -63,7 +71,6 @@ function App() {
 
     let shift = shifts[month-1]
     for(var i = ((daysInMonth(month-1, 2025))+(-6-shift)); i <= (daysInMonth(month-1, 2025)); i++) {
-      console.log(i)
       index++
       dateNumbers.push(<text x={7+(index%7 == 0 ? 6 : (index-1)%7)*100} y={23+Math.ceil(index/7)*100-100} fill="black">{days++}</text>)
     }
@@ -71,7 +78,6 @@ function App() {
     index = 1
 
     for(var  i = 1+shift; i <= (daysInMonth(month, 2025))+shift; i++) {
-      console.log(i)
       dateNumbers.push(<text x={7+(i%7 == 0 ? 6 : (i-1)%7)*100} y={123+Math.ceil(i/7)*100-100} fill="black">{index++}</text>)
     }
 
@@ -79,7 +85,6 @@ function App() {
     index = 1
     
     for(var  i = 1+shift-1; i <= (daysInMonth(month, 2025))+shift; i++) {
-      console.log(i)
       dateNumbers.push(<text  x={7+(i%7 == 0 ? 6 : (i-1)%7)*100} y={523+Math.ceil(i/7)*100-100} fill="black">{index++}</text>)
     }
     
