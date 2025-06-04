@@ -1,14 +1,17 @@
 import { useState, useEffect } from 'react'
 import { Sidebar, Menu, MenuItem } from 'react-pro-sidebar';
 import './App.css'
+import { io } from "socket.io-client";
+import * as ethers from 'ethers';
 
 const isInside = (point: any, rect: any) => point.x > rect.left && point.x < rect.right && point.y > rect.top && point.y < rect.bottom;
 
-const months = ['January', 'February', 'March', "April", "May", "June", "July", "August", "september", "October", "November", "December"]
+const months = ['january', 'february', 'march', "april", "may", "june", "july", "august", "september", "october", "november", "december"]
 const shifts = [3,6,6,2,4,0,2,5,1,3,6,1]
 const priorMonthShifts = [9,12,13,8,10,6,8,11,7,9,12,7]
 
 function App() {
+  const [menu, setMenu] = useState(0)
   const [collapsed, _] = useState<any>(0)
   const currentDate = new Date();
   const currentMonth = currentDate.getMonth()+1
@@ -22,14 +25,26 @@ function App() {
   const [addingXShape, setAddingXShape] = useState<any>(null)
   const [addingYShape, setAddingYShape] = useState<any>(null)
 
+  const [canDelete, setCanDelete] = useState(null)
+
   function clicked(evt: any){
       var e = evt.target;
+      console.log(e.id)
+
+      for(let i = 0; i < shapes.length; i++){
+        if(shapes[i].key == e.id){
+          setCanDelete(e.id)
+        }
+      }
+
       var dim = e.getBoundingClientRect();
       var x = evt.clientX - dim.left;
       var y = evt.clientY - dim.top;
 
+
       for(let i = 0; i < 7; i++){
       for(let j = 0; j < 7; j++){
+        console.log()
         // console.log({x: x, y: y}, {top: j*100, bottom: (j+1)*100, left: i*100, right: (i+1)+100})
         // console.log(isInside({x: x, y: y}, {top: j*100, bottom: (j+1)*100, left: i*100, right: (i+1)*100}))
         if(isInside({x: x, y: y}, {top: j*100, bottom: (j+1)*100, left: i*100, right: (i+1)*100})){
@@ -42,15 +57,41 @@ function App() {
         }
       }
       }
-
-      // alert(x + " " + y)
   }  
+
+  function is_in_triangle (px: any,py: any,ax: any,ay: any,bx: any,by: any,cx: any, cy: any){
+    //credit: http://www.blackpawn.com/texts/pointinpoly/default.html
+
+    var v0 = [cx-ax,cy-ay];
+    var v1 = [bx-ax,by-ay];
+    var v2 = [px-ax,py-ay];
+
+    var dot00 = (v0[0]*v0[0]) + (v0[1]*v0[1]);
+    var dot01 = (v0[0]*v1[0]) + (v0[1]*v1[1]);
+    var dot02 = (v0[0]*v2[0]) + (v0[1]*v2[1]);
+    var dot11 = (v1[0]*v1[0]) + (v1[1]*v1[1]);
+    var dot12 = (v1[0]*v2[0]) + (v1[1]*v2[1]);
+
+    var invDenom = 1/ (dot00 * dot11 - dot01 * dot01);
+
+    var u = (dot11 * dot02 - dot01 * dot12) * invDenom;
+    var v = (dot00 * dot12 - dot01 * dot02) * invDenom;
+
+    return ((u >= 0) && (v >= 0) && (u + v < 1));
+}
 
   const [dates, setDates] = useState<any>([])
 
   function daysInMonth(month: any, year: any) {
       return new Date(year, month, 0).getDate();
   }
+
+  useEffect(() => {
+    const socket = io("http://localhost:3000");
+    socket.on("connect", () => {
+      console.log(socket.id); // x8WIv7-mJelg7on_ALbx
+    });
+  }, [])
 
   useEffect(() => {
     const dateNumbers = []
@@ -90,10 +131,12 @@ function App() {
     console.log(month)
     console.log(shapes)
 
-    console.log(localStorage.getItem(JSON.stringify(addingXShape+":"+addingYShape)))
-
     setNotes(localStorage.getItem(JSON.stringify(addingXShape+":"+addingYShape)))
-  }, [dates, month, shapes, counter, addShapes])
+  }, [dates, month, shapes, addShapes])
+
+  useEffect(() => {
+
+  }, [notes])
 
   useEffect(() => {
     const polygons = JSON.parse(localStorage.getItem(month)!)
@@ -108,13 +151,13 @@ function App() {
       const tempShapes = []
       for(let i = 0; i < polygons.length; i++){
         tempShapes.push(
-          <polygon points={polygons[i]} style={{stroke: 'purple', fill:'transparent'}} />
+          <polygon key={i} id={i} points={polygons[i]} style={{stroke: 'purple', fill:'transparent'}} />
         )
       }
 
       setShapes(tempShapes)
     }
-  }, [notes, month])
+  }, [month])
 
   const addWindow = () => {
     const tempShapes = shapes
@@ -124,7 +167,7 @@ function App() {
     console.log(addingYShape)
 
     tempShapes.push(
-      <polygon points={`${50+100*addingXShape+","+(30+(addingYShape)*100)} ${150+100*addingXShape+","+(150+(addingYShape)*100)} ${50+100*(addingXShape-1)+","+(150+(addingYShape)*100)}`} style={{stroke: 'purple', fill:'transparent'}} />
+      <polygon id={tempShapes.length-1} points={`${50+100*addingXShape+","+(30+(addingYShape)*100)} ${150+100*addingXShape+","+(150+(addingYShape)*100)} ${50+100*(addingXShape-1)+","+(150+(addingYShape)*100)}`} style={{stroke: 'purple', fill:'transparent'}} />
     )
 
     console.log(tempShapes)
@@ -184,51 +227,103 @@ function App() {
   const saveNotes = () => {
     console.log(notes)
     localStorage.setItem(JSON.stringify(addingXShape+":"+addingYShape),notes)
+    setAddShapes(null)
   }
 
+  const [allowlist, setAllowlist] = useState([{id: 0, name: 'morgan'},{ id: 1, name: '~zod'}])
+  const [newUser, setNewUser] = useState(null)
+
+  useEffect(() => {
+
+  }, [newUser, allowlist, notes])
  
   return (
     <>
-    <div style={{ display: 'flex', height: '100%', minHeight: '400px' }}>
-      {addShapes&&<Sidebar collapsed={collapsed}>
-        <Menu>
-          {/* <MenuItem>✕ delete</MenuItem> */}
-          <MenuItem onClick={() => setAddShapes(false)}>✍ close notes</MenuItem>
-         <textarea value={notes} onChange={(e) => setNotes(e.target.value)} style={{height: '200px'}}></textarea>
-          <MenuItem onClick={() => saveNotes()}>save</MenuItem>
+          <br/>
+      <br/>
+      <br/>
+      <div style={{margin: 'auto'}}>
 
-        </Menu>
-      </Sidebar>}
-      <main style={{ padding: 10 }}>
-        <p>{months[month-1]}</p>
+    {/* <input placeholder="search user"></input> */}
+      </div>
+
+      
+      <div>
+        <span id="menu" style={{padding: '20px', cursor: 'pointer', textDecoration: menu == 0 && 'underline'}} onClick={() => setMenu(0)}><span style={{textDecoration: 'line-through'}}>U</span> calenda(t)</span>
+        <span id="menu" style={{padding: '20px',  cursor: 'pointer', textDecoration: menu == 1 &&'underline'}}onClick={() => setMenu(1)}>⇆ sharing (soon)</span>
+        <span id="menu" style={{padding: '20px',  cursor: 'pointer', textDecoration: menu == 2 && 'underline'}}onClick={() => setMenu(2)}>⚔ allowlist</span>
+      </div>
+      <br/>
+      {
+        menu == 2 && <div style={{width: '300px', margin: 'auto'}}>
+          <br/>
+          <p style={{color: 'grey'}}>add a friend by identifier</p>
+          <input style={{padding: '7px', width: '232px', textAlign: 'center'}} placeholder="user.eth, user@domain, ~zod ..." onChange={(evt: any) => setNewUser(evt.target.value)}></input>
+          <br/>
+          <br/>
+          <button onClick={() => {console.log(newUser);setAllowlist((allowlist) => [...allowlist, {name: newUser, id: allowlist.length}]); setNewUser(null)}}>enter</button>
+          <br/>
+
+          <ul>{allowlist.map((person: any, id: any) => {
+            return <li style={{textAlign: 'center', width: '232px', padding: '5px'}}>{person.name} <span id='x-remove' style={{float: 'right', cursor: 'pointer'}} onClick={() => setAllowlist((prevItems) => prevItems.filter((item) => item.id !== id))}>❌</span></li>
+          })}</ul>
+        </div>
+      }
+
+      {
+        menu == 1 && <div>
+          <br/>
+          <input style={{padding: '7px', width: '232px', textAlign: 'center'}} placeholder="user.eth, user@domain, ~zod ..." onChange={(evt: any) => setNewUser(evt.target.value)}></input>
+          &nbsp;&nbsp;
+          
+          <button onClick={() => {console.log(newUser);setAllowlist((allowlist) => [...allowlist, {name: newUser, id: allowlist.length}]); setNewUser(null)}}>enter</button>
+          <br/>
+          <br/>
+          <p style={{color: 'lime'}}>one-time shared</p>
+          <p style={{color: 'red'}}>user offline</p>
+        </div>
+      }
+
+      {menu == 0 && <main style={{ padding: 10 }}>
+        <span><button id='controls' onClick={() => setMonth(month!-1)}>prev</button></span><span style={{display: 'inline-block'}}><p>&nbsp;&nbsp;{months[month-1]}&nbsp;&nbsp;</p></span><span><button id='controls' onClick={() => {setMonth(month!+1)}}>next</button></span>
         <div>
           {/* <button className="sb-button" onClick={() => setCollapsed(!collapsed)}>
             notes
           </button> */}
-    &nbsp;
-    &nbsp;
-    <br/>
-    <br/>
-    {addShapes && <div>
-{/* <button onClick={() => addEmergence()}>emergence</button> */}
+          {addShapes && <div>
 
+          <p style={{color: 'grey'}}>add notes to the day</p>
+          <textarea value={notes} onChange={(evt) => {console.log(evt.target.value);setNotes(evt.target.value)}} style={{height: '50px', width: '250px'}}></textarea>
+          <br/>
+          <br/>
+
+          <button onClick={() => saveNotes()}>&nbsp;save&nbsp;</button>
+          </div>}
+          <br/>
+          {addShapes && <hr/>}
+          <br/>
+          {canDelete && <><br/><button style={{background: 'red'}} onClick={() => {setCanDelete(false);setShapes((prevItems) => prevItems.filter((item) => {
+            if(item.key === canDelete){
+              let polygons = JSON.parse(localStorage.getItem(month))
+              delete polygons[item.key]
+              polygons = polygons.filter((el) => el == null)
+              localStorage.setItem(month, JSON.stringify(polygons))
+            }
+            return item.key !== canDelete
+          }))}}>delete</button></>}
+          <br/>
+          <br/>
+
+    {addShapes && <div style={{margin: 'auto'}}>
+    {/* <button onClick={() => addEmergence()}>emergence</button> */}
     &nbsp;
     &nbsp;
      <button onClick={() => addWindow()}>window</button>
+     &nbsp;
     &nbsp;
-    &nbsp;
-    &nbsp;
-     {/* <button onClick={() => addTree()}>tree</button> */}
-    &nbsp;
-    &nbsp;
-     {/* <button onClick={() => addRebound()}>rebound</button> */}
+     {/* <button onClick={() => addRebound()}>&nbsp;rebound&nbsp;</button> */}
     </div> }
     
-     <br/>
-      <button  onClick={() => setMonth(month!-1)}>prev month</button>
-      &nbsp;&nbsp;
-      <button onClick={() => {setMonth(month!+1)}}>next month</button>
-     <br/>
      <br/>
      <br/>
      <svg onClick={clicked} height="701" width="701" xmlns="http://www.w3.org/2000/svg">
@@ -244,8 +339,7 @@ function App() {
 
     </svg>
         </div>
-      </main>
-    </div>
+      </main>}
     </>
   )
 }
