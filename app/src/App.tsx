@@ -144,7 +144,7 @@ function App() {
     console.log(addingYShape)
 
     tempShapes.push(
-          //@ts-ignore
+      //@ts-ignore
       <polygon id={tempShapes.length-1} points={`${50+100*addingXShape+","+(30+(addingYShape)*100)} ${150+100*addingXShape+","+(150+(addingYShape)*100)} ${50+100*(addingXShape-1)+","+(150+(addingYShape)*100)}`} style={{stroke: 'purple', fill:'transparent'}} />
     )
 
@@ -163,27 +163,35 @@ function App() {
     setShapes(tempShapes)
     setAddShapes(false)
   }
+  
+  const addEmergence = () => {
+    setCounter(counter+1)
 
-  // const addRebound = () => {
+    const tempShapes = shapes
+
+    tempShapes.push(
+      //@ts-ignore
+      <polygon id={tempShapes.length-1} points={`${50+100*addingXShape+","+(30+(addingYShape)*100)} ${250+100*addingXShape+","+(30+(addingYShape)*100)} ${250+100*(addingXShape-1)+","+(150+(addingYShape)*100)}`} style={{stroke: 'purple', fill:'transparent'}} />
+
+      // <polygon points="550,30 750,30 650,150" style={{stroke: 'purple', fill:'transparent'}} />
+    )
+
+    const polygons = JSON.parse(localStorage.getItem(month)!)
+
+    polygons.push(`${50+100*addingXShape+","+(30+(addingYShape)*100)} ${250+100*addingXShape+","+(30+(addingYShape)*100)} ${250+100*(addingXShape-1)+","+(150+(addingYShape)*100)}`)
+
+    localStorage.setItem(month,JSON.stringify(polygons))
+
+    setShapes(tempShapes)
+    setAddShapes(false)
+  }
+
+    // const addRebound = () => {
   //   setCounter(counter+1)
   //   const tempShapes = shapes
 
   //   tempShapes.push(
   //     <polygon points="250,50 350,20 450,50 350,80" style={{stroke: 'purple', fill:'transparent'}} />
-  //   )
-  //   setShapes(tempShapes)
-  //         setAddShapes(false)
-
-  // }
-  
-  // const addWindow = () => {
-  //   setCounter(counter+1)
-
-  //   const tempShapes = shapes
-
-  //   tempShapes.push(
-  //     <polygon points="550,30 750,30 650,150" style={{stroke: 'purple', fill:'transparent'}} />
-    
   //   )
   //   setShapes(tempShapes)
   //         setAddShapes(false)
@@ -293,7 +301,7 @@ function App() {
           <br/>
 
     {addShapes && <div style={{margin: 'auto'}}>
-    {/* <button onClick={() => addEmergence()}>emergence</button> */}
+    <button onClick={() => addEmergence()}>emergence</button>
     &nbsp;
     &nbsp;
      <button onClick={() => addWindow()}>window</button>
