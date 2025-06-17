@@ -1,12 +1,24 @@
 import { useState, useEffect } from 'react'
 import './App.css'
 import { io } from "socket.io-client";
+import { VFAASNet } from './VFAASNet'
 
 const isInside = (point: any, rect: any) => point.x > rect.left && point.x < rect.right && point.y > rect.top && point.y < rect.bottom;
 
 const months = ['january', 'february', 'march', "april", "may", "june", "july", "august", "september", "october", "november", "december"]
 const shifts = [3,6,6,2,4,0,2,5,1,3,6,1]
 const priorMonthShifts = [9,12,13,8,10,6,8,11,7,9,12,7]
+
+// use level
+const vfaasNet = new VFAASNet({host: 'localhost', port: 8079})
+
+const onPeerMessage = (message: any) => {
+  // use message
+  console.log(message)
+  vfaasNet.webSocket.send('message', {datum: 'howdy'})
+};
+
+vfaasNet.aPath(onPeerMessage)
 
 function App() {
   const [menu, setMenu] = useState(0)
