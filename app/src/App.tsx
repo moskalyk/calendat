@@ -20,6 +20,17 @@ const onPeerMessage = (message: any) => {
 
 vfaasNet.aPath(onPeerMessage)
 
+// // Feel free to copy. Uses @shadcn/ui tailwind colors.
+// function Slot(props: any) {
+//   return (
+//     <div
+//     >
+//       {props.char !== null && <div>{props.char}</div>}
+//       {props.hasFakeCaret && <FakeCaret />}
+//     </div>
+//   )
+// }
+
 function App() {
   const [menu, setMenu] = useState(0)
   const currentDate = new Date();
@@ -228,12 +239,99 @@ function App() {
     setAddShapes(null)
   }
 
-  const [allowlist, setAllowlist] = useState<any>([{id: 0, name: 'morgan'},{ id: 1, name: '~zod'}])
+  const [allowlist, setAllowlist] = useState<any>([{id: 0, name: 'morgan'}])
   const [newUser, setNewUser] = useState<any>(null)
 
   useEffect(() => {
 
   }, [newUser, allowlist, notes])
+
+  const [hasRecvEmail, setHasRecvEmail] = useState(false)
+  const [hasEmailValidated, setHasEmailValidated] = useState(false)
+  const [validationError, setValidationError] = useState(false)
+  const [otpEmailSend, setOtpEmailSend] = useState(null)
+  const [otpCodeSend, setOtpCodeSend] = useState(null)
+  const [reminderTime, setReminderTime] = useState('2025-06-18T00:00')
+  const [reminderNote, setReminderNote] = useState(null)
+
+  const sendEmail = async () => {
+    console.log(otpEmailSend)
+      const res = await fetch('http://localhost:3000/run', {
+            method: 'POST',
+            headers: {
+                "Content-Type": "application/json",
+              },
+            body: JSON.stringify({
+                bundleID: "OTPEmail", // TODO: use unique bundle id to network
+                functionName: 'serverless',
+                args: [otpEmailSend],
+            })
+        })
+
+      const jsonRes = await res.json()
+        console.log(jsonRes)
+      if(jsonRes.response == 'complete'){
+        setHasEmailValidated(true)
+        setHasRecvEmail(true)
+        console.log('test')
+      }else {
+        setHasRecvEmail(true)
+        // setOtpEmailSend(null)
+      }
+  }
+
+  const sendValidation = async () => {
+    console.log(otpEmailSend)
+      const res = await fetch('http://localhost:3000/run', {
+            method: 'POST',
+            headers: {
+                "Content-Type": "application/json",
+              },
+            body: JSON.stringify({
+                bundleID: "OTPCodeValidation", // TODO: use unique bundle id to network
+                functionName: 'serverless',
+                args: [otpEmailSend,otpCodeSend],
+            })
+        })
+        const resJson = await res.json()
+        console.log(resJson)
+      if(!Boolean(resJson.response)){
+        setValidationError(true)
+      } else {
+        setHasEmailValidated(true)
+      }
+      setOtpCodeSend(null)
+
+  }
+
+  const onChangeReminderTime = (evt: any) => {
+    console.log((new Date(evt)).getMilliseconds())
+
+    setReminderTime(evt)
+  }
+
+  const saveReminder = async () => {
+
+    console.log((new Date(reminderTime)).getMilliseconds())
+
+    const res = await fetch('http://localhost:3000/run', {
+          method: 'POST',
+          headers: {
+              "Content-Type": "application/json",
+            },
+          body: JSON.stringify({
+              bundleID: "ReminderSet", // TODO: use unique bundle id to network
+              functionName: 'serverless',
+              args: [otpEmailSend, reminderTime, reminderNote],
+          })
+      })
+      const resJson = await res.json()
+      console.log(resJson)
+  }
+
+  useEffect(()=>{
+
+  },[otpCodeSend,otpEmailSend, reminderTime])
  
   return (
     <>
@@ -256,7 +354,7 @@ function App() {
         menu == 2 && <div style={{width: '300px', margin: 'auto'}}>
           <br/>
           <p style={{color: 'grey'}}>add a friend by identifier</p>
-          <input style={{padding: '7px', width: '232px', textAlign: 'center'}} placeholder="user.eth, user@domain, ~zod ..." onChange={(evt: any) => setNewUser(evt.target.value)}></input>
+          <input style={{padding: '7px', width: '232px', textAlign: 'center'}} placeholder="user@domain" onChange={(evt: any) => setNewUser(evt.target.value)}></input>
           <br/>
           <br/>
           <button onClick={() => {console.log(newUser);setAllowlist((allowlist: any) => [...allowlist, {name: newUser, id: allowlist.length}]); setNewUser(null)}}>enter</button>
@@ -309,10 +407,60 @@ function App() {
             }
             return item.key !== canDelete
           }))}}>delete</button></>}
-          <br/>
-          <br/>
 
     {addShapes && <div style={{margin: 'auto'}}>
+        <span id="menu" style={{padding: '20px',  cursor: 'pointer', textDecoration: ''}}onClick={() => setMenu(3)}>⏲ reminders</span>
+        <br/>
+        <br/>
+        {
+          hasRecvEmail ? <>
+          {
+          !hasEmailValidated && validationError ? 
+            <>{hasEmailValidated.toString()}
+              <p>try validation again</p>
+            </>
+            : 
+            <>
+            {
+              hasEmailValidated ? <>
+                <input
+                type="datetime-local"
+                id="meeting-time"
+                name="meeting-time"
+                value={reminderTime}
+                onChange={(evt: any) => onChangeReminderTime(evt.target.value)}
+                 />
+                <br/>
+                <br/>
+                <textarea style={{height: '60px', width: '175px'}} onChange={(evt: any) => setReminderNote(evt.target.value)}></textarea>
+                <br/>
+                <br/>
+
+                <button onClick={saveReminder}>set reminder</button>
+                <br/>
+                </>:
+              <>
+              <p>?validate your otp code</p>
+              {/* @ts-ignore" */}
+              <input placeholder='otp code' value={otpCodeSend} onChange={(evt) => setOtpCodeSend(evt.target.value)}></input>
+              <button onClick={() => sendValidation()}>validate otp</button>
+            </>
+            }
+            </>
+            
+          }
+          </> : <>
+          {/* TODO: use secure otp password session stored in browser cookie */}
+          <p>!please validate your email</p>
+          {/* @ts-ignore" */}
+          <input placeholder='email' value={otpEmailSend} onChange={(evt: any) => setOtpEmailSend(evt.target.value)}></input>
+          &nbsp;&nbsp;
+          <button onClick={() => sendEmail()}>send otp</button>
+          </>
+        }
+        <br/>
+        <hr/>
+        <br/>
     <button onClick={() => addEmergence()}>emergence</button>
     &nbsp;
     &nbsp;

@@ -1,7 +1,7 @@
 class SocketIO {}
 
 class VFAASNetSocket extends SocketIO {
-    constructor(url: any){super()}
+    constructor(url: any){console.log(url);super()}
     // TODO
     send() {
     }
@@ -22,6 +22,7 @@ class VFAASNet {
 
   // TODO: add a listener
   aPath(func: (message: any) => void) {
+    console.log(func)
     return this
   }
 
