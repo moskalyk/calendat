@@ -14,8 +14,6 @@ let vfaasNet: any;
 //@ts-ignore
 let id: any;
 
-
-
 const styles = {
   container: {
     margin: 'auto',
@@ -27,7 +25,6 @@ const styles = {
     margin: "0px 0",
     overflow: "hidden",
   },
-  // header: { display: 'flex', cursor: 'pointer', padding: '10px 15px', backgroundColor: '#f5f5f5' },
   title: { margin: 0, marginLeft: '20px', fontFamily: 'Courier',fontSize: "16px", fontWeight: "500" },
   content: { overflow: "hidden", transition: "height 0.3s ease" },
   innerContent: {
@@ -36,88 +33,12 @@ const styles = {
     width: "100%",
     height: '100%'
   },
-  inputGroup: {
-    margin:'auto',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: "center",
-    gap: '15px',
-  },
-  input: { width: "50px" },
-  select: { marginLeft: "5px" },
-  tabContainer: {
-    top: 0,
-    position: "fixed",
-    transform: "translateX(-50%)",
-    display: "flex",
-    justifyContent: "space-around",
-    width: "200px",
-  },
-  tab: {
-    cursor: "pointer",
-    fontSize: "16px",
-    padding: "10px",
-    transition: "border-bottom 0.3s ease",
-  },
-  containerTab: {
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "flex-start",
-    position: "fixed",
-    top: 0,
-    padding: "10px 0",
-  },
-  chartContainer: {
-    width: "330px",
-    border: "1px solid #ccc",
-    borderRadius: "5px",
-    overflow: "hidden",
-  },
   header: {
     display: "flex",
     backgroundColor: "#f5f5f5",
     fontWeight: "bold",
     padding: "10px 0",
-  },
-  row: {
-    display: "flex",
-    borderBottom: "1px solid #e0e0e0",
-    padding: "8px 0",
-    fontSize: "5px",
-  },
-  column: {
-    flex: 1,
-    width: "200px",
-    padding: "10px",
-    fontSize: "19px",
-    textAlign: "center",
-  },
-  columnHistory: {
-    flex: 1,
-    width: "100px",
-    padding: "5px",
-    fontSize: "12px",
-    textAlign: "center",
-  },
-  dataContainer: {
-    maxHeight: "200px",
-    overflowY: "auto",
-  },
-  label: {
-    fontSize: "18px",
-    display: "flex",
-    alignItems: "center",
-  },
-  checkbox: {
-    opacity: "0",
-    marginRight: "120px",
-  },
-  buttons: {
-    primary: {
-      fontFamily: 'Tiny5',
-      backgroundColor: "blue",
-    },
-  },
+  }
 };
 
 // CollapsibleCard component
@@ -180,6 +101,7 @@ function App() {
   const [addingYShape, setAddingYShape] = useState<any>(null)
 
   const [canDelete, setCanDelete] = useState<any>(null)
+
   //@ts-ignore
   const [selectedColor, setSelectedColor] = useState(JSON.parse(localStorage.getItem(JSON.stringify('selected color'))))
 
@@ -197,17 +119,11 @@ function App() {
       var x = evt.clientX - dim.left;
       var y = evt.clientY - dim.top;
 
-
       for(let i = 0; i < 7; i++){
       for(let j = 0; j < 7; j++){
-        console.log()
-        // console.log({x: x, y: y}, {top: j*100, bottom: (j+1)*100, left: i*100, right: (i+1)+100})
-        // console.log(isInside({x: x, y: y}, {top: j*100, bottom: (j+1)*100, left: i*100, right: (i+1)*100}))
         if(isInside({x: x, y: y}, {top: j*100, bottom: (j+1)*100, left: i*100, right: (i+1)*100})){
-          // alert((i+1)*(j+1))
           setAddShapes(true)
           setCounter(counter+1)
-
           setAddingXShape(i)
           setAddingYShape(j)
         }
@@ -222,29 +138,19 @@ function App() {
   }
 
   useEffect(() => {
-
-  }, [])
-
-  useEffect(() => {
     const dateNumbers = []
     let index = 0
     let days;
-    console.log('month', month)
-
     // a hack, but a small one
     days = daysInMonth(month-1, 2024)-priorMonthShifts[month-1]
 
     let shift = shifts[month-1]
     for(var i = ((daysInMonth(month-1, 2025))+(-6-shift)); i <= (daysInMonth(month-1, 2025)); i++) {
-      console.log(i)
       index++
       dateNumbers.push(<text x={7+(index%7 == 0 ? 6 : (index-1)%7)*100} y={23+Math.ceil(index/7)*100-100} fill="black">{days++}</text>)
     }
-
     index = 1
-
     for(var  i = 1+shift; i <= (daysInMonth(month, 2025))+shift; i++) {
-      console.log(i)
       dateNumbers.push(<text x={7+(i%7 == 0 ? 6 : (i-1)%7)*100} y={123+Math.ceil(i/7)*100-100} fill="black">{index++}</text>)
     }
 
@@ -252,17 +158,12 @@ function App() {
     index = 1
     
     for(var  i = 1+shift-1; i <= (daysInMonth(month, 2025))+shift; i++) {
-      console.log(i)
       dateNumbers.push(<text  x={7+(i%7 == 0 ? 6 : (i-1)%7)*100} y={523+Math.ceil(i/7)*100-100} fill="black">{index++}</text>)
     }
-    
     setDates(dateNumbers)
-    console.log(dates)
   }, [month])
-  useEffect(() => {
-    console.log(month)
-    console.log(shapes)
 
+  useEffect(() => {
     setNotes(localStorage.getItem(JSON.stringify(addingXShape+":"+addingYShape)))
   }, [dates, month, shapes, addShapes])
 
@@ -272,8 +173,7 @@ function App() {
 
   useEffect(() => {
     const polygons = JSON.parse(localStorage.getItem(month)!)
-    console.log(polygons)
-      setShapes([])
+    setShapes([])
 
     let color;
 
@@ -281,13 +181,10 @@ function App() {
       color = 'rgb(0, 255, 234)'
     } else if(selectedColor == 1) {
       color = 'rgb(164, 0, 164)'
-
     }else if(selectedColor == 2) {
       color = 'blue'
-
     }else if(selectedColor == 3) {
       color = 'rgb(255, 71, 86)'
-
     }else if(selectedColor == 4) {
       color = 'gold'
     }
@@ -296,7 +193,6 @@ function App() {
       setShapes([])
       localStorage.setItem(month, JSON.stringify([]))
     }else {
-
       const tempShapes = []
       for(let i = 0; i < polygons.length; i++){
         tempShapes.push(
@@ -310,29 +206,29 @@ function App() {
   }, [month, selectedColor])
 
   const addWindow = () => {
+
+    // create a temporary variable
     const tempShapes = shapes
 
+    // create a reactable variable
     setCounter(counter+1)
 
-    console.log(addingYShape)
-
+    // add shapes to temprorary structure
     tempShapes.push(
       //@ts-ignore
       <polygon id={tempShapes.length-1} points={`${50+100*addingXShape+","+(30+(addingYShape)*100)} ${150+100*addingXShape+","+(150+(addingYShape)*100)} ${50+100*(addingXShape-1)+","+(150+(addingYShape)*100)}`} style={{stroke: 'purple', fill:'transparent'}} />
     )
 
-    console.log(tempShapes)
-
+    // get polygons from localstorage
     const polygons = JSON.parse(localStorage.getItem(month)!)
   
+    // add new shape and coords
     polygons.push(`${50+100*addingXShape+","+(30+(addingYShape)*100)} ${150+100*addingXShape+","+(150+(addingYShape)*100)} ${50+100*(addingXShape-1)+","+(150+(addingYShape)*100)}`)
     
-    console.log(polygons)
-
-    console.log(polygons==tempShapes)
-
+    // set back to local storage
     localStorage.setItem(month,JSON.stringify(polygons))
 
+    // render
     setShapes(tempShapes)
     setAddShapes(false)
   }
@@ -384,7 +280,6 @@ function App() {
   // }
 
   const saveNotes = () => {
-    console.log(notes)
     localStorage.setItem(JSON.stringify(addingXShape+":"+addingYShape),notes)
     setAddShapes(null)
   }
@@ -393,7 +288,6 @@ function App() {
   const [newUser, setNewUser] = useState<any>(null)
 
   useEffect(() => {
-
   }, [newUser, allowlist, notes])
 
   //@ts-ignore
@@ -404,12 +298,11 @@ function App() {
   const [otpCodeSend, setOtpCodeSend] = useState(null)
   const [reminderTime, setReminderTime] = useState('2025-06-18T00:00')
   const [reminderNote, setReminderNote] = useState(null)
+
   //@ts-ignore
   const [socketId, setSocketId] = useState(null)
 
   const sendEmail = async () => {
-    console.log(otpEmailSend)
-    console.log(socketId)
     vfaasNet.webSocket.send('init', {id: socketId, email: otpEmailSend})
 
       // const res = await fetch('http://localhost:3000/run', {
@@ -437,7 +330,6 @@ function App() {
   }
 
   const sendValidation = async () => {
-    console.log(otpEmailSend)
       const res = await fetch('http://localhost:3000/run', {
             method: 'POST',
             headers: {
@@ -461,15 +353,10 @@ function App() {
   }
 
   const onChangeReminderTime = (evt: any) => {
-    console.log((new Date(evt)).getMilliseconds())
-
     setReminderTime(evt)
   }
 
   const saveReminder = async () => {
-
-    console.log((new Date(reminderTime)).getMilliseconds())
-
     const res = await fetch('http://localhost:3000/run', {
           method: 'POST',
           headers: {
@@ -497,9 +384,9 @@ function App() {
 
     // const ack = (ack: any) => {
     //   id = ack.datum
-    //   console.log(ack)
     //   setSocketId(ack.datum)
     // }
+
     // const init = (message: any) => {
     //   console.log(socketId)
     //   console.log(otpEmailSend)
@@ -507,23 +394,20 @@ function App() {
     // }
 
     // const sharing = (data: any) => {
-
       // check if offline or not
       // check if initiator or not
-
       // console.log(data)
-      // vfaasNet.webSocket.send('sharing', {isInitiator: false, email: otpEmailSend, geo: [1,2,3,4,5,6,7,8,9,10,11,12].map(el => localStorage.getItem(JSON.stringify(el)))})
+      // if(data.isInitiator) vfaasNet.webSocket.send('sharing', {isInitiator: false, email: otpEmailSend, geometry: [1,2,3,4,5,6,7,8,9,10,11,12].map(el => localStorage.getItem(JSON.stringify(el)))})
     // }
 
     // vfaasNet.aPath(ack)
     // vfaasNet.aPath(init)
     // vfaasNet.aPath(sharing)
-
   }, [])
 
   // const share = () => {
   //   console.log('gunna send')
-  //   vfaasNet.webSocket.send('sharing', {isInitiator: true, email: otpEmailSend, geo: localStorage.getItem(JSON.stringify(6))})
+  //   vfaasNet.webSocket.send('sharing', {isInitiator: true, email: otpEmailSend, geometry: localStorage.getItem(JSON.stringify(6))})
   // }
 
   useEffect(()=>{
@@ -548,20 +432,14 @@ function App() {
       }
       <br/>
       <div style={{margin: 'auto'}}>
-
-    {/* <input placeholder="search user"></input> */}
       </div>
-
-      
       <div>
         {
           menu != 3 && <>
-          <span id="menu" style={{padding: '20px', cursor: 'pointer', textDecoration:   menu == 0 ? 'underline': ''}} onClick={() => setMenu(0)}><span style={{textDecoration: 'line-through'}}>U</span> calenda(t)</span>
-        {/* <span id="menu" style={{padding: '20px',  cursor: 'pointer', textDecoration: menu == 1 ?'underline': ''}}onClick={() => setMenu(1)}>⇆ sharing (soon)</span> */}
-        <span id="menu" onMouseLeave={() => isSignedIn&&setHoverMenu(false)} onMouseEnter={() =>isSignedIn&&setHoverMenu(true)} style={{padding: '20px',  cursor: 'pointer', color: !isSignedIn ? 'lightgrey': '', textDecoration: hoverMenu || menu == 2 ? 'underline': ''}}onClick={() => isSignedIn && setMenu(2)}>⚔ allowlist</span>
+            <span id="menu" style={{padding: '20px', cursor: 'pointer', textDecoration:   menu == 0 ? 'underline': ''}} onClick={() => setMenu(0)}><span style={{textDecoration: 'line-through'}}>U</span> calenda(t)</span>
+            <span id="menu" onMouseLeave={() => isSignedIn&&setHoverMenu(false)} onMouseEnter={() =>isSignedIn&&setHoverMenu(true)} style={{padding: '20px',  cursor: 'pointer', color: !isSignedIn ? 'lightgrey': '', textDecoration: hoverMenu || menu == 2 ? 'underline': ''}}onClick={() => isSignedIn && setMenu(2)}>⚔ allowlist</span>
           </>
         }
-        
       </div>
       <br/>
       {
@@ -571,10 +449,6 @@ function App() {
             {<>
           (<div className="circle">
 </div> <span>offline)</span></>}
-            {/* {<>
-          (<div class="circle">
-</div> <span>offline)</span></>} */}
-
 </p>
           <hr style={{width: '50px', marginBottom: '15px'}}/>
           
@@ -601,7 +475,7 @@ function App() {
             
           }
           </> : <>
-          {/* TODO: use secure otp password session stored in browser cookie */}
+          {/* TODO: use secure otp password session stored in browser cookie, maybe jwt */}
           <p>!please validate your email</p>
           {/* @ts-ignore" */}
           <input placeholder='email' style={{height: '25px'}} value={otpEmailSend} onChange={(evt: any) => setOtpEmailSend(evt.target.value)}></input>
@@ -616,10 +490,6 @@ function App() {
           {shapes.length} # of shapes
           <br/>
           <br/>
-          {/* {shapes.length} # of friends */}
-          {/* <br/> */}
-          {/* <br/> */}
-          {/* <br/> */}
           <p>calenda(t) themes</p>
           <hr style={{width: '50px', marginBottom: '15px'}}/>
           <div style={{margin: 'auto', display: 'inline-block'}}>
@@ -630,8 +500,6 @@ function App() {
           <button className="circle-button-4" style={{border: selectedColor == 3 ? '1px solid black':'', height: selectedColor == 3 ? '38px': ''}} onClick={() => setSelectedColor(3)}></button>
           <button className="circle-button-5" style={{border: selectedColor == 4 ? '1px solid black':'', height: selectedColor == 4 ? '38px' : ''}} onClick={() => setSelectedColor(4)}></button>
           </div>
-          
-          {/* <button className="circle-button-6" onClick={() => {}}></button> */}
         </div>
       }
       {
@@ -674,11 +542,8 @@ function App() {
               <CollapsibleCard
                 title={'notes'}
                 key={0}
-                // onRecord={handleRecord}
                 style={{
                   position: "relative",
-                  // left: "50%",
-                  // transform: "translateX(-50%)",
                 }}
               >
                 <div>
@@ -702,11 +567,8 @@ function App() {
               {isSignedIn && <><br/><CollapsibleCard
                 title={'reminders'}
                 key={0}
-                // onRecord={handleRecord}
                 style={{
                   position: "relative",
-                  // left: "50%",
-                  // transform: "translateX(-50%)",
                 }}
               >
                 <div style={{margin: 'auto'}}>
@@ -739,13 +601,10 @@ function App() {
                 passedInheight={'0'}
                 title={'geometry'}
                 key={0}
-                // onRecord={handleRecord}
                 style={{
                   position: "relative",
                   height: '180px',
                   margin: '20px'
-                  // left: "50%",
-                  // transform: "translateX(-50%)",
                 }}
               >
                 <button onClick={() => addEmergence()}>emergence</button>
@@ -759,10 +618,6 @@ function App() {
               </CollapsibleCard>
             </div>
           }
-   
-        {/* {
-          <button onClick={() => share()}>share</button>
-        } */}
      <br/>
      <svg onClick={clicked} height="701" width="701" xmlns="http://www.w3.org/2000/svg">
     <defs>
@@ -774,9 +629,7 @@ function App() {
     {dates}
     <rect width="100%" height="100%" fill="url(#grid)"/>
       {shapes?.map((shape: any) => shape)}
-
     </svg>
-
       </main>}
     </>
   )
