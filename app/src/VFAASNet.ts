@@ -1,9 +1,22 @@
-class SocketIO {}
+// class SocketIO {}
 
-class VFAASNetSocket extends SocketIO {
-    constructor(url: any){console.log(url);super()}
+import { io } from "socket.io-client";
+
+class VFAASNetSocket {
+    socket: any;
+
+    constructor(url: any){
+      // super()
+      this.socket = io(url)
+    }
+    
     // TODO
-    send() {
+    send(channel: any, message: any) {
+      this.socket.emit(channel, message)
+    }
+
+    on(channel: any, func: any) {
+      this.socket.on(channel, func)
     }
 }
 
@@ -17,18 +30,28 @@ class VFAASNet {
 
   // TODO: on connection creation
   aBoot() {
-
+      this.webSocket.on('connection', (socket: any) => {
+      console.log(socket)
+    })
+    return this
   }
 
   // TODO: add a listener
   aPath(func: (message: any) => void) {
-    console.log(func)
-    return this
+    let val = func.name
+    // return (channel:any) => {
+      this.webSocket.on(val, (message: any) => {
+        func(message)
+      })
+      return this
+    // }
   }
 
   // TODO: create a message when a connected peer leaves
   aLeave(){
-
+    this.webSocket.on('disconnection', () => {
+      console.log('a user disconnected')
+    })
   }
 }
 

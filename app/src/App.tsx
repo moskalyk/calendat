@@ -1,6 +1,5 @@
-import { useState, useEffect } from 'react'
+import { useState, useRef, useEffect } from "react";
 import './App.css'
-import { io } from "socket.io-client";
 import { VFAASNet } from './VFAASNet'
 
 const isInside = (point: any, rect: any) => point.x > rect.left && point.x < rect.right && point.y > rect.top && point.y < rect.bottom;
@@ -10,26 +9,161 @@ const shifts = [3,6,6,2,4,0,2,5,1,3,6,1]
 const priorMonthShifts = [9,12,13,8,10,6,8,11,7,9,12,7]
 
 // use level
-const vfaasNet = new VFAASNet({host: 'localhost', port: 8079})
+let vfaasNet: any;
 
-const onPeerMessage = (message: any) => {
-  // use message
-  console.log(message)
-  vfaasNet.webSocket.send('message', {datum: 'howdy'})
+//@ts-ignore
+let id: any;
+
+
+
+const styles = {
+  container: {
+    margin: 'auto',
+    display: 'inline-block',
+    width: '420px',
+    border: "1px solid #ddd",
+    borderRadius: "5px",
+    // @ts-ignore
+    margin: "0px 0",
+    overflow: "hidden",
+  },
+  // header: { display: 'flex', cursor: 'pointer', padding: '10px 15px', backgroundColor: '#f5f5f5' },
+  title: { margin: 0, marginLeft: '20px', fontFamily: 'Courier',fontSize: "16px", fontWeight: "500" },
+  content: { overflow: "hidden", transition: "height 0.3s ease" },
+  innerContent: {
+    padding: "10px 15px",
+    backgroundColor: "#fff",
+    width: "100%",
+    height: '100%'
+  },
+  inputGroup: {
+    margin:'auto',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: "center",
+    gap: '15px',
+  },
+  input: { width: "50px" },
+  select: { marginLeft: "5px" },
+  tabContainer: {
+    top: 0,
+    position: "fixed",
+    transform: "translateX(-50%)",
+    display: "flex",
+    justifyContent: "space-around",
+    width: "200px",
+  },
+  tab: {
+    cursor: "pointer",
+    fontSize: "16px",
+    padding: "10px",
+    transition: "border-bottom 0.3s ease",
+  },
+  containerTab: {
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "flex-start",
+    position: "fixed",
+    top: 0,
+    padding: "10px 0",
+  },
+  chartContainer: {
+    width: "330px",
+    border: "1px solid #ccc",
+    borderRadius: "5px",
+    overflow: "hidden",
+  },
+  header: {
+    display: "flex",
+    backgroundColor: "#f5f5f5",
+    fontWeight: "bold",
+    padding: "10px 0",
+  },
+  row: {
+    display: "flex",
+    borderBottom: "1px solid #e0e0e0",
+    padding: "8px 0",
+    fontSize: "5px",
+  },
+  column: {
+    flex: 1,
+    width: "200px",
+    padding: "10px",
+    fontSize: "19px",
+    textAlign: "center",
+  },
+  columnHistory: {
+    flex: 1,
+    width: "100px",
+    padding: "5px",
+    fontSize: "12px",
+    textAlign: "center",
+  },
+  dataContainer: {
+    maxHeight: "200px",
+    overflowY: "auto",
+  },
+  label: {
+    fontSize: "18px",
+    display: "flex",
+    alignItems: "center",
+  },
+  checkbox: {
+    opacity: "0",
+    marginRight: "120px",
+  },
+  buttons: {
+    primary: {
+      fontFamily: 'Tiny5',
+      backgroundColor: "blue",
+    },
+  },
 };
 
-vfaasNet.aPath(onPeerMessage)
+// CollapsibleCard component
+const CollapsibleCard = ({ title, children }: any) => {
+  const [isOpen, setIsOpen] = useState<any>(false);
+  const [height, setHeight] = useState<any>(0);
+  const contentRef = useRef<any>(null);
 
-// // Feel free to copy. Uses @shadcn/ui tailwind colors.
-// function Slot(props: any) {
-//   return (
-//     <div
-//     >
-//       {props.char !== null && <div>{props.char}</div>}
-//       {props.hasFakeCaret && <FakeCaret />}
-//     </div>
-//   )
-// }
+  const toggleCollapse = () => {
+    setIsOpen(!isOpen);
+  };
+
+  useEffect(() => {
+    if (isOpen) {
+      setHeight(contentRef.current.scrollHeight + 20);
+    } else {
+      setHeight(0);
+    }
+  }, [isOpen]);
+
+  return (
+    <>
+      <div style={styles.container}>
+        <div style={styles.header} onClick={toggleCollapse}>
+          <h3 style={styles.title}>{title} {title=='reminders' && <>
+          (<div className="circle">
+</div> <span>offline)</span></>}
+          </h3>
+        </div>
+
+        <div
+          ref={contentRef}
+          style={{
+            ...styles.content,
+            height: `${height}px`,
+            transition: "height 0.3s ease",
+          }}
+        >
+          <div style={styles.innerContent}>
+            {children}
+          </div>
+        </div>
+      </div>
+    </>
+  );
+};
 
 function App() {
   const [menu, setMenu] = useState(0)
@@ -46,6 +180,8 @@ function App() {
   const [addingYShape, setAddingYShape] = useState<any>(null)
 
   const [canDelete, setCanDelete] = useState<any>(null)
+  //@ts-ignore
+  const [selectedColor, setSelectedColor] = useState(JSON.parse(localStorage.getItem(JSON.stringify('selected color'))))
 
   function clicked(evt: any){
       var e = evt.target;
@@ -86,10 +222,7 @@ function App() {
   }
 
   useEffect(() => {
-    const socket = io("http://localhost:3000");
-    socket.on("connect", () => {
-      console.log(socket.id); // x8WIv7-mJelg7on_ALbx
-    });
+
   }, [])
 
   useEffect(() => {
@@ -142,6 +275,23 @@ function App() {
     console.log(polygons)
       setShapes([])
 
+    let color;
+
+    if(selectedColor == 0){
+      color = 'rgb(0, 255, 234)'
+    } else if(selectedColor == 1) {
+      color = 'rgb(164, 0, 164)'
+
+    }else if(selectedColor == 2) {
+      color = 'blue'
+
+    }else if(selectedColor == 3) {
+      color = 'rgb(255, 71, 86)'
+
+    }else if(selectedColor == 4) {
+      color = 'gold'
+    }
+
     if(!polygons){
       setShapes([])
       localStorage.setItem(month, JSON.stringify([]))
@@ -151,13 +301,13 @@ function App() {
       for(let i = 0; i < polygons.length; i++){
         tempShapes.push(
           //@ts-ignore
-          <polygon key={i} id={i} points={polygons[i]} style={{stroke: 'purple', fill:'transparent'}} />
+          <polygon key={i} id={i} points={polygons[i]} style={{stroke: color, fill:'transparent'}} />
         )
       }
 
       setShapes(tempShapes)
     }
-  }, [month])
+  }, [month, selectedColor])
 
   const addWindow = () => {
     const tempShapes = shapes
@@ -239,13 +389,14 @@ function App() {
     setAddShapes(null)
   }
 
-  const [allowlist, setAllowlist] = useState<any>([{id: 0, name: 'morgan'}])
+  const [allowlist, setAllowlist] = useState<any>([{id: 0, name: 'morgan.moskalyk@protonmail.ch'}])
   const [newUser, setNewUser] = useState<any>(null)
 
   useEffect(() => {
 
   }, [newUser, allowlist, notes])
 
+  //@ts-ignore
   const [hasRecvEmail, setHasRecvEmail] = useState(false)
   const [hasEmailValidated, setHasEmailValidated] = useState(false)
   const [validationError, setValidationError] = useState(false)
@@ -253,31 +404,36 @@ function App() {
   const [otpCodeSend, setOtpCodeSend] = useState(null)
   const [reminderTime, setReminderTime] = useState('2025-06-18T00:00')
   const [reminderNote, setReminderNote] = useState(null)
+  //@ts-ignore
+  const [socketId, setSocketId] = useState(null)
 
   const sendEmail = async () => {
     console.log(otpEmailSend)
-      const res = await fetch('http://localhost:3000/run', {
-            method: 'POST',
-            headers: {
-                "Content-Type": "application/json",
-              },
-            body: JSON.stringify({
-                bundleID: "OTPEmail", // TODO: use unique bundle id to network
-                functionName: 'serverless',
-                args: [otpEmailSend],
-            })
-        })
+    console.log(socketId)
+    vfaasNet.webSocket.send('init', {id: socketId, email: otpEmailSend})
 
-      const jsonRes = await res.json()
-        console.log(jsonRes)
-      if(jsonRes.response == 'complete'){
-        setHasEmailValidated(true)
-        setHasRecvEmail(true)
-        console.log('test')
-      }else {
-        setHasRecvEmail(true)
-        // setOtpEmailSend(null)
-      }
+      // const res = await fetch('http://localhost:3000/run', {
+      //       method: 'POST',
+      //       headers: {
+      //           "Content-Type": "application/json",
+      //         },
+      //       body: JSON.stringify({
+      //           bundleID: "OTPEmail", // TODO: use unique bundle id to network
+      //           functionName: 'serverless',
+      //           args: [otpEmailSend],
+      //       })
+      //   })
+
+      // const jsonRes = await res.json()
+      //   console.log(jsonRes)
+      // if(jsonRes.response == 'complete'){
+      //   setHasEmailValidated(true)
+      //   setHasRecvEmail(true)
+      //   console.log('test')
+      // }else {
+      //   setHasRecvEmail(true)
+      //   // setOtpEmailSend(null)
+      // }
   }
 
   const sendValidation = async () => {
@@ -329,14 +485,67 @@ function App() {
       console.log(resJson)
   }
 
+
+  useEffect(() => {
+    vfaasNet = new VFAASNet({host: 'localhost', port: 8079})
+
+    // const onPeerMessage = (message: any) => {
+    //   // use message
+    //   console.log(message)
+    //   vfaasNet.webSocket.send('message', {datum: 'howdy'})
+    // }
+
+    // const ack = (ack: any) => {
+    //   id = ack.datum
+    //   console.log(ack)
+    //   setSocketId(ack.datum)
+    // }
+    // const init = (message: any) => {
+    //   console.log(socketId)
+    //   console.log(otpEmailSend)
+    //   vfaasNet.webSocket.send('init', {id: socketId, email: otpEmailSend})
+    // }
+
+    // const sharing = (data: any) => {
+
+      // check if offline or not
+      // check if initiator or not
+
+      // console.log(data)
+      // vfaasNet.webSocket.send('sharing', {isInitiator: false, email: otpEmailSend, geo: [1,2,3,4,5,6,7,8,9,10,11,12].map(el => localStorage.getItem(JSON.stringify(el)))})
+    // }
+
+    // vfaasNet.aPath(ack)
+    // vfaasNet.aPath(init)
+    // vfaasNet.aPath(sharing)
+
+  }, [])
+
+  // const share = () => {
+  //   console.log('gunna send')
+  //   vfaasNet.webSocket.send('sharing', {isInitiator: true, email: otpEmailSend, geo: localStorage.getItem(JSON.stringify(6))})
+  // }
+
   useEffect(()=>{
 
-  },[otpCodeSend,otpEmailSend, reminderTime])
+  },[socketId, otpCodeSend,otpEmailSend, reminderTime])
+  // @ts-ignore
+  const [userOffline, setUserOffline] = useState(false)
+  // @ts-ignore
+  const [isSignedIn, setIsSignedIn] = useState(false)
+  const [hoverMenu, setHoverMenu] = useState(false)
+
+  useEffect(() => {
+    localStorage.setItem(JSON.stringify('selected color'), JSON.stringify(selectedColor))
+  }, [selectedColor])
  
   return (
     <>
           <br/>
       <br/>
+      {
+        <div id="menu" style={{cursor: 'pointer', position: 'fixed', top: '50px', right: '100px'}}><span style={{fontSize: '25px', bottom: '-20px'}}>☻</span> <span style={{marginBottom: '20px'}} onClick={() => setMenu(3)}>profile</span></div>
+      }
       <br/>
       <div style={{margin: 'auto'}}>
 
@@ -345,74 +554,31 @@ function App() {
 
       
       <div>
-        <span id="menu" style={{padding: '20px', cursor: 'pointer', textDecoration: menu == 0 ? 'underline': ''}} onClick={() => setMenu(0)}><span style={{textDecoration: 'line-through'}}>U</span> calenda(t)</span>
-        <span id="menu" style={{padding: '20px',  cursor: 'pointer', textDecoration: menu == 1 ?'underline': ''}}onClick={() => setMenu(1)}>⇆ sharing (soon)</span>
-        <span id="menu" style={{padding: '20px',  cursor: 'pointer', textDecoration: menu == 2 ? 'underline': ''}}onClick={() => setMenu(2)}>⚔ allowlist</span>
+        {
+          menu != 3 && <>
+          <span id="menu" style={{padding: '20px', cursor: 'pointer', textDecoration:   menu == 0 ? 'underline': ''}} onClick={() => setMenu(0)}><span style={{textDecoration: 'line-through'}}>U</span> calenda(t)</span>
+        {/* <span id="menu" style={{padding: '20px',  cursor: 'pointer', textDecoration: menu == 1 ?'underline': ''}}onClick={() => setMenu(1)}>⇆ sharing (soon)</span> */}
+        <span id="menu" onMouseLeave={() => isSignedIn&&setHoverMenu(false)} onMouseEnter={() =>isSignedIn&&setHoverMenu(true)} style={{padding: '20px',  cursor: 'pointer', color: !isSignedIn ? 'lightgrey': '', textDecoration: hoverMenu || menu == 2 ? 'underline': ''}}onClick={() => isSignedIn && setMenu(2)}>⚔ allowlist</span>
+          </>
+        }
+        
       </div>
       <br/>
       {
-        menu == 2 && <div style={{width: '300px', margin: 'auto'}}>
-          <br/>
-          <p style={{color: 'grey'}}>add a friend by identifier</p>
-          <input style={{padding: '7px', width: '232px', textAlign: 'center'}} placeholder="user@domain" onChange={(evt: any) => setNewUser(evt.target.value)}></input>
-          <br/>
-          <br/>
-          <button onClick={() => {console.log(newUser);setAllowlist((allowlist: any) => [...allowlist, {name: newUser, id: allowlist.length}]); setNewUser(null)}}>enter</button>
-          <br/>
+        menu == 3 &&<div>
+          <div style={{position: `fixed`, left: '30%', cursor: 'pointer'}} onClick={() => setMenu(0)}>{`< back`}</div>
+          <p>sign in &nbsp;
+            {<>
+          (<div className="circle">
+</div> <span>offline)</span></>}
+            {/* {<>
+          (<div class="circle">
+</div> <span>offline)</span></>} */}
 
-          <ul>{allowlist.map((person: any, id: any) => {
-            return <li style={{textAlign: 'center', width: '232px', padding: '5px'}}>{person.name} <span id='x-remove' style={{float: 'right', cursor: 'pointer'}} onClick={() => setAllowlist((prevItems: any) => prevItems.filter((item: any) => item.id !== id))}>❌</span></li>
-          })}</ul>
-        </div>
-      }
-
-      {
-        menu == 1 && <div>
-          <br/>
-          <input style={{padding: '7px', width: '232px', textAlign: 'center'}} placeholder="user.eth, user@domain, ~zod ..." onChange={(evt: any) => setNewUser(evt.target.value)}></input>
-          &nbsp;&nbsp;
+</p>
+          <hr style={{width: '50px', marginBottom: '15px'}}/>
           
-          <button onClick={() => {console.log(newUser);setAllowlist((allowlist: any) => [...allowlist, {name: newUser, id: allowlist.length}]); setNewUser(null)}}>enter</button>
-          <br/>
-          <br/>
-          <p style={{color: 'lime'}}>one-time shared</p>
-          <p style={{color: 'red'}}>user offline</p>
-        </div>
-      }
-
-      {menu == 0 && <main style={{ padding: 10 }}>
-        <span><button id='controls' onClick={() => setMonth(month!-1)}>prev</button></span><span style={{display: 'inline-block'}}><p>&nbsp;&nbsp;{months[month-1]}&nbsp;&nbsp;</p></span><span><button id='controls' onClick={() => {setMonth(month!+1)}}>next</button></span>
-        <div>
-          {/* <button className="sb-button" onClick={() => setCollapsed(!collapsed)}>
-            notes
-          </button> */}
-          {addShapes && <div>
-
-          <p style={{color: 'grey'}}>add notes to the day</p>
-          <textarea value={notes} onChange={(evt) => {console.log(evt.target.value);setNotes(evt.target.value)}} style={{height: '50px', width: '250px'}}></textarea>
-          <br/>
-          <br/>
-
-          <button onClick={() => saveNotes()}>&nbsp;save&nbsp;</button>
-          </div>}
-          <br/>
-          {addShapes && <hr/>}
-          <br/>
-          {canDelete && <><br/><button style={{background: 'red'}} onClick={() => {setCanDelete(false);setShapes((prevItems: any) => prevItems.filter((item: any) => {
-            if(item.key === canDelete){
-              let polygons = JSON.parse(localStorage.getItem(month)!)
-              delete polygons[item.key]
-              polygons = polygons.filter((el: any) => el == null)
-              localStorage.setItem(month, JSON.stringify(polygons))
-            }
-            return item.key !== canDelete
-          }))}}>delete</button></>}
-
-    {addShapes && <div style={{margin: 'auto'}}>
-        <span id="menu" style={{padding: '20px',  cursor: 'pointer', textDecoration: ''}}onClick={() => setMenu(3)}>⏲ reminders</span>
-        <br/>
-        <br/>
-        {
+{false && <>
           hasRecvEmail ? <>
           {
           !hasEmailValidated && validationError ? 
@@ -423,21 +589,6 @@ function App() {
             <>
             {
               hasEmailValidated ? <>
-                <input
-                type="datetime-local"
-                id="meeting-time"
-                name="meeting-time"
-                value={reminderTime}
-                onChange={(evt: any) => onChangeReminderTime(evt.target.value)}
-                 />
-                <br/>
-                <br/>
-                <textarea style={{height: '60px', width: '175px'}} onChange={(evt: any) => setReminderNote(evt.target.value)}></textarea>
-                <br/>
-                <br/>
-
-                <button onClick={saveReminder}>set reminder</button>
-                <br/>
                 </>:
               <>
               <p>?validate your otp code</p>
@@ -453,24 +604,165 @@ function App() {
           {/* TODO: use secure otp password session stored in browser cookie */}
           <p>!please validate your email</p>
           {/* @ts-ignore" */}
-          <input placeholder='email' value={otpEmailSend} onChange={(evt: any) => setOtpEmailSend(evt.target.value)}></input>
+          <input placeholder='email' style={{height: '25px'}} value={otpEmailSend} onChange={(evt: any) => setOtpEmailSend(evt.target.value)}></input>
           &nbsp;&nbsp;
-          <button onClick={() => sendEmail()}>send otp</button>
+          <button style={{height: '35px'}} onClick={() => sendEmail()}>send otp</button>
           </>
-        }
-        <br/>
-        <hr/>
-        <br/>
-    <button onClick={() => addEmergence()}>emergence</button>
-    &nbsp;
-    &nbsp;
-     <button onClick={() => addWindow()}>window</button>
-     &nbsp;
-    &nbsp;
-     {/* <button onClick={() => addRebound()}>&nbsp;rebound&nbsp;</button> */}
-    </div> }
-    
-     <br/>
+</>
+      }
+          <br/>
+          <p>stats'</p>
+          <hr style={{width: '50px', marginBottom: '15px'}}/>
+          {shapes.length} # of shapes
+          <br/>
+          <br/>
+          {/* {shapes.length} # of friends */}
+          {/* <br/> */}
+          {/* <br/> */}
+          {/* <br/> */}
+          <p>calenda(t) themes</p>
+          <hr style={{width: '50px', marginBottom: '15px'}}/>
+          <div style={{margin: 'auto', display: 'inline-block'}}>
+
+          <button className="circle-button-1" style={{border: selectedColor == 0 ? '1px solid black':'', height: selectedColor == 0 ? '38px': ''}}  onClick={() => setSelectedColor(0)}></button>
+          <button className="circle-button-2" style={{border: selectedColor == 1 ? '1px solid black':'', height: selectedColor == 1 ? '38px': ''}} onClick={() => setSelectedColor(1)}></button>
+          <button className="circle-button-3" style={{border: selectedColor == 2 ? '1px solid black':'', height: selectedColor == 2 ? '38px': ''}} onClick={() => setSelectedColor(2)}></button>
+          <button className="circle-button-4" style={{border: selectedColor == 3 ? '1px solid black':'', height: selectedColor == 3 ? '38px': ''}} onClick={() => setSelectedColor(3)}></button>
+          <button className="circle-button-5" style={{border: selectedColor == 4 ? '1px solid black':'', height: selectedColor == 4 ? '38px' : ''}} onClick={() => setSelectedColor(4)}></button>
+          </div>
+          
+          {/* <button className="circle-button-6" onClick={() => {}}></button> */}
+        </div>
+      }
+      {
+        menu == 2 && <div >
+          <br/>
+          <p style={{color: 'grey'}}>add a friend by identifier</p>
+          <input style={{padding: '7px', width: '232px', textAlign: 'center'}} placeholder="user@domain.tld" onChange={(evt: any) => setNewUser(evt.target.value)}></input>
+          &nbsp;&nbsp;
+          <button onClick={() => {console.log(newUser);setAllowlist((allowlist: any) => [...allowlist, {name: newUser, id: allowlist.length}]); setNewUser(null)}}>share</button>
+          <br/>
+          {
+            userOffline && <p style={{color: 'red'}}>user offline</p>
+          }
+          <ul>{allowlist.map((person: any, id: any) => {
+            return <li style={{textAlign: 'center', width: '332px', padding: '5px'}}>{person.name} <span id='x-remove' style={{float: 'right', cursor: 'pointer'}} onClick={() => setAllowlist((prevItems: any) => prevItems.filter((item: any) => item.id !== id))}>❌</span></li>
+          })}</ul>
+        </div>
+      }
+
+      {
+        menu == 1 && <div >
+          <br/>
+          <input style={{padding: '7px', width: '232px', textAlign: 'center'}} placeholder="enter email" onChange={(evt: any) => setNewUser(evt.target.value)}></input>
+          &nbsp;&nbsp;
+          <button onClick={() => {console.log(newUser);setAllowlist((allowlist: any) => [...allowlist, {name: newUser, id: allowlist.length}]); setNewUser(null)}}>enter</button>
+          <br/>
+          <br/>
+          <p style={{color: 'lime'}}>one-time shared</p>
+        </div>
+      }
+          <br/>
+      {menu == 0 && 
+      <main style={{ padding: 10 }}>
+        <span><button id='controls' onClick={() => setMonth(month!-1)}>prev</button></span><span style={{display: 'inline-block'}}><p>&nbsp;&nbsp;{months[month-1]}&nbsp;&nbsp;</p></span><span><button id='controls' onClick={() => {setMonth(month!+1)}}>next</button></span>
+          <br/>
+          <br/>
+          {
+            addShapes &&
+            <div>
+              <CollapsibleCard
+                title={'notes'}
+                key={0}
+                // onRecord={handleRecord}
+                style={{
+                  position: "relative",
+                  // left: "50%",
+                  // transform: "translateX(-50%)",
+                }}
+              >
+                <div>
+                  <p style={{color: 'grey'}}>add notes to the day</p>
+                  <textarea value={notes} onChange={(evt) => {console.log(evt.target.value);setNotes(evt.target.value)}} style={{height: '50px', width: '250px'}}></textarea>
+                  <br/>
+                  <br/>
+
+                  <button onClick={() => saveNotes()}>&nbsp;save&nbsp;</button>
+                </div>
+                {canDelete && <><button style={{background: 'red'}} onClick={() => {setCanDelete(false);setShapes((prevItems: any) => prevItems.filter((item: any) => {
+                  if(item.key === canDelete){
+                    let polygons = JSON.parse(localStorage.getItem(month)!)
+                    delete polygons[item.key]
+                    polygons = polygons.filter((el: any) => el == null)
+                    localStorage.setItem(month, JSON.stringify(polygons))
+                  }
+                  return item.key !== canDelete
+                }))}}>delete</button></>}
+              </CollapsibleCard>
+              {isSignedIn && <><br/><CollapsibleCard
+                title={'reminders'}
+                key={0}
+                // onRecord={handleRecord}
+                style={{
+                  position: "relative",
+                  // left: "50%",
+                  // transform: "translateX(-50%)",
+                }}
+              >
+                <div style={{margin: 'auto'}}>
+                  <span id="menu" style={{cursor: 'pointer', textDecoration: ''}}onClick={() => setMenu(3)}>⏲ reminders</span>
+                  <br/>
+                  <br/>
+                  {
+                    <>
+                    <input
+                    type="datetime-local"
+                    id="meeting-time"
+                    name="meeting-time"
+                    value={reminderTime}
+                    onChange={(evt: any) => onChangeReminderTime(evt.target.value)}
+                    />
+                    <br/>
+                    <br/>
+                    <textarea style={{height: '60px', width: '175px'}} onChange={(evt: any) => setReminderNote(evt.target.value)}></textarea>
+                    <br/>
+                    <br/>
+
+                    <button onClick={saveReminder}>set reminder</button>
+                    <br/>
+                    </>
+                  }
+                </div>
+              </CollapsibleCard> </>}
+              <br/>
+              <CollapsibleCard
+                passedInheight={'0'}
+                title={'geometry'}
+                key={0}
+                // onRecord={handleRecord}
+                style={{
+                  position: "relative",
+                  height: '180px',
+                  margin: '20px'
+                  // left: "50%",
+                  // transform: "translateX(-50%)",
+                }}
+              >
+                <button onClick={() => addEmergence()}>emergence</button>
+                &nbsp;
+                &nbsp;
+                <button onClick={() => addWindow()}>window</button>
+                &nbsp;
+                &nbsp;
+                <br/>
+                <br/>
+              </CollapsibleCard>
+            </div>
+          }
+   
+        {/* {
+          <button onClick={() => share()}>share</button>
+        } */}
      <br/>
      <svg onClick={clicked} height="701" width="701" xmlns="http://www.w3.org/2000/svg">
     <defs>
@@ -484,7 +776,7 @@ function App() {
       {shapes?.map((shape: any) => shape)}
 
     </svg>
-        </div>
+
       </main>}
     </>
   )

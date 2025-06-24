@@ -52,6 +52,114 @@
   display: inline-block;
 }
 
-#menu:hover {
-  text-decoration: underline;
+.circle-button-1 {
+  margin: 2.5px;
+  width: 20px; /* Set equal width and height */
+  height: 37px;
+  border-radius: 50%; /* Makes the shape circular */
+  background-color: rgb(0, 255, 234); /* Button color */
+  color: white; /* Text color */
+  border: none; /* Remove default border */
+  display: flex; /* Center content */
+  align-items: center;
+  float: left;
+  justify-content: center;
+  cursor: pointer; /* Pointer cursor for interaction */
+  transition: background-color 0.3s ease; /* Smooth hover effect */
+}
+
+.circle-button-2 {
+  margin: 2.5px;
+
+  width: 20px; /* Set equal width and height */
+  height: 37px;
+  border-radius: 50%; /* Makes the shape circular */
+  background-color: rgb(164, 0, 164); /* Button color */
+  color: white; /* Text color */
+  border: none; /* Remove default border */
+  display: flex; /* Center content */
+  align-items: center;
+  float: left;
+  justify-content: center;
+  cursor: pointer; /* Pointer cursor for interaction */
+  transition: background-color 0.3s ease; /* Smooth hover effect */
+}
+
+.circle-button-3 {
+  margin: 2.5px;
+
+  width: 20px; /* Set equal width and height */
+  height: 37px;
+  border-radius: 50%; /* Makes the shape circular */
+  background-color: blue; /* Button color */
+  color: white; /* Text color */
+  border: none; /* Remove default border */
+  display: flex; /* Center content */
+  align-items: center;
+  float: left;
+  justify-content: center;
+  cursor: pointer; /* Pointer cursor for interaction */
+  transition: background-color 0.3s ease; /* Smooth hover effect */
+}
+
+.circle-button-4 {
+  margin: 2.5px;
+
+  width: 20px; /* Set equal width and height */
+  height: 37px;
+  border-radius: 50%; /* Makes the shape circular */
+  background-color: rgb(255, 71, 86); /* Button color */
+  color: white; /* Text color */
+  border: none; /* Remove default border */
+  display: flex; /* Center content */
+  align-items: center;
+  float: left;
+  justify-content: center;
+  cursor: pointer; /* Pointer cursor for interaction */
+  transition: background-color 0.3s ease; /* Smooth hover effect */
+}
+
+.circle-button-5 {
+  margin: 2.5px;
+  width: 20px; /* Set equal width and height */
+  height: 37px;
+  border-radius: 50%; /* Makes the shape circular */
+  background-color: gold; /* Button color */
+  color: white; /* Text color */
+  border: none; /* Remove default border */
+  display: flex; /* Center content */
+  align-items: center;
+  float: left;
+  justify-content: center;
+  cursor: pointer; /* Pointer cursor for interaction */
+  transition: background-color 0.3s ease; /* Smooth hover effect */
+}
+
+.circle-button-6 {
+  margin: 2.5px;
+
+  width: 20px; /* Set equal width and height */
+  height: 37px;
+  border-radius: 50%; /* Makes the shape circular */
+  background-color: hotpink; /* Button color */
+  color: white; /* Text color */
+  border: none; /* Remove default border */
+  display: flex; /* Center content */
+  align-items: center;
+  float: left;
+  justify-content: center;
+  cursor: pointer; /* Pointer cursor for interaction */
+  transition: background-color 0.3s ease; /* Smooth hover effect */
+}
+
+.circle {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  background-color: red;
+  border-radius: 50%;
+}
+
+.text {
+  margin: auto;
 }
