@@ -319,8 +319,8 @@ function App() {
   const [validationError, setValidationError] = useState(false)
   const [otpEmailSend, setOtpEmailSend] = useState(null)
   const [otpCodeSend, setOtpCodeSend] = useState(null)
-  const [reminderTime, setReminderTime] = useState('2025-06-18T00:00')
-  const [reminderNote, setReminderNote] = useState(null)
+  // const [reminderTime, setReminderTime] = useState('2025-06-18T00:00')
+  // const [reminderNote, setReminderNote] = useState(null)
   const [OTPCodePrompt,setOTPCodePrompt] =useState(null)
 
   //@ts-ignore
@@ -405,25 +405,25 @@ function App() {
 
   }
 
-  const onChangeReminderTime = (evt: any) => {
-    setReminderTime(evt)
-  }
+  // const onChangeReminderTime = (evt: any) => {
+  //   setReminderTime(evt)
+  // }
 
-  const saveReminder = async () => {
-    const res = await fetch('http://localhost:3000/run', {
-          method: 'POST',
-          headers: {
-              "Content-Type": "application/json",
-            },
-          body: JSON.stringify({
-              bundleID: "ReminderSet", // TODO: use unique bundle id to network
-              functionName: 'serverless',
-              args: [otpEmailSend, reminderTime, reminderNote],
-          })
-      })
-      const resJson = await res.json()
-      console.log(resJson)
-  }
+  // const saveReminder = async () => {
+  //   const res = await fetch('http://localhost:3000/run', {
+  //         method: 'POST',
+  //         headers: {
+  //             "Content-Type": "application/json",
+  //           },
+  //         body: JSON.stringify({
+  //             bundleID: "ReminderSet", // TODO: use unique bundle id to network
+  //             functionName: 'serverless',
+  //             args: [otpEmailSend, reminderTime, reminderNote],
+  //         })
+  //     })
+  //     const resJson = await res.json()
+  //     console.log(resJson)
+  // }
 
 
   useEffect(() => {
@@ -432,11 +432,11 @@ function App() {
       // runOnce++
       vfaasNet = new VFAASNet({host: 'localhost', port: 8079})
 
-      const onPeerMessage = (message: any) => {
-        // use message
-        console.log(message)
-        vfaasNet.webSocket.send('message', {datum: 'howdy'})
-      }
+      // const onPeerMessage = (message: any) => {
+      //   // use message
+      //   console.log(message)
+      //   vfaasNet.webSocket.send('message', {datum: 'howdy'})
+      // }
 
       const ack = (ack: any) => {
         id = ack.datum
@@ -444,6 +444,7 @@ function App() {
       }
 
       const init = (message: any) => {
+        console.log(message)
         console.log(socketId)
         console.log(otpEmailSend)
         vfaasNet.webSocket.send('init', {id: socketId, email: otpEmailSend})
@@ -488,7 +489,7 @@ function App() {
 
   useEffect(()=>{
 
-  },[socketId, otpCodeSend,otpEmailSend, reminderTime])
+  },[socketId, otpCodeSend,otpEmailSend])
   // @ts-ignore
   const [userOffline, setUserOffline] = useState(false)
   // @ts-ignore
