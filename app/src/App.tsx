@@ -14,6 +14,9 @@ let vfaasNet: any;
 //@ts-ignore
 let id: any;
 
+//@ts-ignore
+let userEmail: any;
+
 const styles = {
   container: {
     margin: 'auto',
@@ -26,12 +29,14 @@ const styles = {
     overflow: "hidden",
   },
   title: { margin: 0, marginLeft: '20px', fontFamily: 'Courier',fontSize: "16px", fontWeight: "500" },
-  content: { overflow: "hidden", transition: "height 0.3s ease" },
+  content: { 
+    paddingLeft: '-28px',
+    overflow: "hidden", transition: "height 0.3s ease" },
   innerContent: {
     padding: "10px 15px",
     backgroundColor: "#fff",
     width: "100%",
-    height: '100%'
+    height: '100%',
   },
   header: {
     display: "flex",
@@ -172,6 +177,8 @@ function App() {
   }, [notes])
 
   useEffect(() => {
+
+    // TODO: change month and user / other to get polygons with selected colors data structure
     const polygons = JSON.parse(localStorage.getItem(month)!)
     setShapes([])
 
@@ -241,8 +248,6 @@ function App() {
     tempShapes.push(
       //@ts-ignore
       <polygon id={tempShapes.length-1} points={`${50+100*addingXShape+","+(30+(addingYShape)*100)} ${250+100*addingXShape+","+(30+(addingYShape)*100)} ${250+100*(addingXShape-1)+","+(150+(addingYShape)*100)}`} style={{stroke: 'purple', fill:'transparent'}} />
-
-      // <polygon points="550,30 750,30 650,150" style={{stroke: 'purple', fill:'transparent'}} />
     )
 
     const polygons = JSON.parse(localStorage.getItem(month)!)
@@ -255,17 +260,28 @@ function App() {
     setAddShapes(false)
   }
 
-    // const addRebound = () => {
-  //   setCounter(counter+1)
-  //   const tempShapes = shapes
+    const addRebound = () => {
+    setCounter(counter+1)
+    const tempShapes = shapes
 
-  //   tempShapes.push(
-  //     <polygon points="250,50 350,20 450,50 350,80" style={{stroke: 'purple', fill:'transparent'}} />
-  //   )
-  //   setShapes(tempShapes)
-  //         setAddShapes(false)
+    tempShapes.push(
+      //@ts-ignore
+      // <polygon id={tempShapes.length-1} points={`${50+100*addingXShape+","+(30+(addingYShape)*100)} ${250+100*addingXShape+","+(30+(addingYShape)*100)} ${250+100*(addingXShape-1)+","+(150+(addingYShape)*100)}`} style={{stroke: 'purple', fill:'transparent'}} />
+      
+      <polygon points={`${100+50*addingXShape+","+(50+(addingYShape)*100)} ${200+50*addingXShape+","+(20+(addingYShape)*100)} ${300+50*addingXShape+","+(50+(addingYShape)*100)} ${200+50*addingXShape+","+(80+(addingYShape)*100)}`} style={{stroke: 'purple', fill:'transparent'}} />
+    )
+    setShapes(tempShapes)
+          setAddShapes(false)
+           const polygons = JSON.parse(localStorage.getItem(month)!)
 
-  // }
+    polygons.push(`${100+50*addingXShape+","+(50+(addingYShape)*100)} ${200+50*addingXShape+","+(20+(addingYShape)*100)} ${300+50*addingXShape+","+(50+(addingYShape)*100)} ${200+50*addingXShape+","+(80+(addingYShape)*100)}`)
+
+    localStorage.setItem(month,JSON.stringify(polygons))
+
+    setShapes(tempShapes)
+    setAddShapes(false)
+
+  }
 
   // const addTree = () => {
   //   setCounter(counter+1)
@@ -290,6 +306,13 @@ function App() {
   useEffect(() => {
   }, [newUser, allowlist, notes])
 
+  useEffect(() => {
+
+
+    // await wait(1000)
+    // console.log(vfaasNet.notConnected)
+  }, [])
+
   //@ts-ignore
   const [hasRecvEmail, setHasRecvEmail] = useState(false)
   const [hasEmailValidated, setHasEmailValidated] = useState(false)
@@ -298,35 +321,64 @@ function App() {
   const [otpCodeSend, setOtpCodeSend] = useState(null)
   const [reminderTime, setReminderTime] = useState('2025-06-18T00:00')
   const [reminderNote, setReminderNote] = useState(null)
+  const [OTPCodePrompt,setOTPCodePrompt] =useState(null)
 
   //@ts-ignore
   const [socketId, setSocketId] = useState(null)
+  const [emailOTPLoading, setEmailOTPLoading] = useState(false)
+  // const [userEmail, setUserEmail] = useState(null)
 
   const sendEmail = async () => {
+    setEmailOTPLoading(true)
     vfaasNet.webSocket.send('init', {id: socketId, email: otpEmailSend})
+    console.log(otpEmailSend)
+    // setUserEmail(otpEmailSend)
+    userEmail = otpEmailSend
 
-      // const res = await fetch('http://localhost:3000/run', {
-      //       method: 'POST',
-      //       headers: {
-      //           "Content-Type": "application/json",
-      //         },
-      //       body: JSON.stringify({
-      //           bundleID: "OTPEmail", // TODO: use unique bundle id to network
-      //           functionName: 'serverless',
-      //           args: [otpEmailSend],
-      //       })
-      //   })
+    // get expiry from local storage
+    let otpExpiry = JSON.parse(localStorage.getItem('otp-expiry')!)
 
-      // const jsonRes = await res.json()
-      //   console.log(jsonRes)
-      // if(jsonRes.response == 'complete'){
-      //   setHasEmailValidated(true)
-      //   setHasRecvEmail(true)
-      //   console.log('test')
-      // }else {
-      //   setHasRecvEmail(true)
-      //   // setOtpEmailSend(null)
-      // }
+    console.log(otpExpiry)
+
+    // see if expired
+    if(otpExpiry==null||(otpExpiry && (new Date().getTime() > otpExpiry.expiry))){
+      const res = await fetch('http://localhost:3000/run', {
+            method: 'POST',
+            headers: {
+                "Content-Type": "application/json",
+              },
+            body: JSON.stringify({
+                bundleID: "OTPEmail", // TODO: use unique bundle id to network
+                functionName: 'serverless',
+                args: [otpEmailSend],
+            })
+        })
+
+      const jsonRes = await res.json()
+      console.log(jsonRes)
+      setOTPCodePrompt(jsonRes.response)
+      setEmailOTPLoading(false)
+
+      if(jsonRes.response == 'complete'){
+        setHasEmailValidated(true)
+        setHasRecvEmail(true)
+        console.log('test')
+      }else {
+        setHasRecvEmail(true)
+        const now = new Date();
+
+        // Add 11 minutes to the current time
+        now.setMinutes(now.getMinutes() + 11);
+        localStorage.setItem('otp-expiry', JSON.stringify({otp: jsonRes.response, expiry: now.getTime()}))
+        // setOtpEmailSend(null)
+      }
+    } else {
+      console.log('else')
+      setEmailOTPLoading(false)
+      setHasEmailValidated(true)
+      setHasRecvEmail(true)
+      setIsSignedIn(true)
+    }
   }
 
   const sendValidation = async () => {
@@ -347,6 +399,7 @@ function App() {
         setValidationError(true)
       } else {
         setHasEmailValidated(true)
+        setIsSignedIn(true)
       }
       setOtpCodeSend(null)
 
@@ -374,41 +427,64 @@ function App() {
 
 
   useEffect(() => {
-    vfaasNet = new VFAASNet({host: 'localhost', port: 8079})
 
-    // const onPeerMessage = (message: any) => {
-    //   // use message
-    //   console.log(message)
-    //   vfaasNet.webSocket.send('message', {datum: 'howdy'})
+    // if(runOnce == 0) {
+      // runOnce++
+      vfaasNet = new VFAASNet({host: 'localhost', port: 8079})
+
+      const onPeerMessage = (message: any) => {
+        // use message
+        console.log(message)
+        vfaasNet.webSocket.send('message', {datum: 'howdy'})
+      }
+
+      const ack = (ack: any) => {
+        id = ack.datum
+        setSocketId(ack.datum)
+      }
+
+      const init = (message: any) => {
+        console.log(socketId)
+        console.log(otpEmailSend)
+        vfaasNet.webSocket.send('init', {id: socketId, email: otpEmailSend})
+      }
+
+      const sharing = (data: any) => {
+        // check if offline or not
+        // check if initiator or not
+
+        //TODO: store in localstorage in a certain data structure
+        console.log(data)
+        console.log(userEmail)
+        console.log('in sharing callback')
+
+        // TODO: check if email is in allow list, if so, pass along sharing
+        if(JSON.parse(data).isInitiator) vfaasNet.webSocket.send('sharing', {color: selectedColor, isInitiator: false, initiator: JSON.parse(data).initiator, email: JSON.parse(data).initiator, geometry: [1,2,3,4,5,6,7,8,9,10,11,12].map(el => localStorage.getItem(JSON.stringify(el)))})
+      }
+
+      vfaasNet.aPath(ack)
+      vfaasNet.aPath(init)
+      vfaasNet.aPath(sharing)
+
+      vfaasNet.aBoot()
     // }
-
-    // const ack = (ack: any) => {
-    //   id = ack.datum
-    //   setSocketId(ack.datum)
-    // }
-
-    // const init = (message: any) => {
-    //   console.log(socketId)
-    //   console.log(otpEmailSend)
-    //   vfaasNet.webSocket.send('init', {id: socketId, email: otpEmailSend})
-    // }
-
-    // const sharing = (data: any) => {
-      // check if offline or not
-      // check if initiator or not
-      // console.log(data)
-      // if(data.isInitiator) vfaasNet.webSocket.send('sharing', {isInitiator: false, email: otpEmailSend, geometry: [1,2,3,4,5,6,7,8,9,10,11,12].map(el => localStorage.getItem(JSON.stringify(el)))})
-    // }
-
-    // vfaasNet.aPath(ack)
-    // vfaasNet.aPath(init)
-    // vfaasNet.aPath(sharing)
   }, [])
 
-  // const share = () => {
-  //   console.log('gunna send')
-  //   vfaasNet.webSocket.send('sharing', {isInitiator: true, email: otpEmailSend, geometry: localStorage.getItem(JSON.stringify(6))})
-  // }
+  // TODO: create a local storage listener
+
+  // TODO: later create hex input for colors
+
+  // TODO: show user email on shape inspection
+
+  const share = async () => {
+    console.log('gunna send')
+    const polygons = [1,2,3,4,5,6,7,8,9,10,11,12].map((el: any) => JSON.parse(localStorage.getItem(el)!))
+    console.log({isInitiator: true, initiator: userEmail, email: newUser, geometry: polygons})
+
+    await vfaasNet.webSocket.send('sharing', {isInitiator: true, initiator: userEmail, email: newUser, geometry: polygons, color: selectedColor})
+    setAllowlist((allowlist: any) => [...allowlist, {name: newUser, id: allowlist.length}]); 
+    setNewUser(null)
+  }
 
   useEffect(()=>{
 
@@ -445,14 +521,15 @@ function App() {
       {
         menu == 3 &&<div>
           <div style={{position: `fixed`, left: '30%', cursor: 'pointer'}} onClick={() => setMenu(0)}>{`< back`}</div>
-          <p>sign in &nbsp;
-            {<>
+          {!hasEmailValidated && <><p>sign in 
+            {/* &nbsp; */}
+            {/* {<>
           (<div className="circle">
-</div> <span>offline)</span></>}
+</div> <span>offline)</span></>} */}
 </p>
-          <hr style={{width: '50px', marginBottom: '15px'}}/>
+          <hr style={{width: '50px', marginBottom: '15px'}}/></>}
           
-{false && <>
+{
           hasRecvEmail ? <>
           {
           !hasEmailValidated && validationError ? 
@@ -466,9 +543,10 @@ function App() {
                 </>:
               <>
               <p>?validate your otp code</p>
+              <p>{OTPCodePrompt}</p>
               {/* @ts-ignore" */}
-              <input placeholder='otp code' value={otpCodeSend} onChange={(evt) => setOtpCodeSend(evt.target.value)}></input>
-              <button onClick={() => sendValidation()}>validate otp</button>
+              <input  style={{border: '0px', padding: '8px',borderRadius: '3px',height: '22px'}} placeholder='otp code' value={otpCodeSend} onChange={(evt) => setOtpCodeSend(evt.target.value)}></input>
+              <button style={{height: '38px'}} onClick={() => sendValidation()}>validate otp</button>
             </>
             }
             </>
@@ -476,14 +554,24 @@ function App() {
           }
           </> : <>
           {/* TODO: use secure otp password session stored in browser cookie, maybe jwt */}
-          <p>!please validate your email</p>
-          {/* @ts-ignore" */}
-          <input placeholder='email' style={{height: '25px'}} value={otpEmailSend} onChange={(evt: any) => setOtpEmailSend(evt.target.value)}></input>
-          &nbsp;&nbsp;
-          <button style={{height: '35px'}} onClick={() => sendEmail()}>send otp</button>
+          <p>validate your email</p>
+          {
+              emailOTPLoading 
+            ? 
+              <>
+                <p>loading...</p>
+              </> 
+            : 
+              <>
+                {/* @ts-ignore" */}
+                <input placeholder='email' style={{border: '0px', padding: '8px',borderRadius: '3px',height: '22px'}} value={otpEmailSend} onChange={(evt: any) => setOtpEmailSend(evt.target.value)}></input>
+                &nbsp;&nbsp;
+                <button style={{height: '38px'}} onClick={() => sendEmail()}>send otp</button>
+              </>
+          }
           </>
-</>
       }
+          <br/>
           <br/>
           <p>stats'</p>
           <hr style={{width: '50px', marginBottom: '15px'}}/>
@@ -506,15 +594,19 @@ function App() {
         menu == 2 && <div >
           <br/>
           <p style={{color: 'grey'}}>add a friend by identifier</p>
-          <input style={{padding: '7px', width: '232px', textAlign: 'center'}} placeholder="user@domain.tld" onChange={(evt: any) => setNewUser(evt.target.value)}></input>
+          <input style={{border: '0px', padding: '8px',borderRadius: '3px',height: '22px'}} placeholder="user@domain.tld" onChange={(evt: any) => setNewUser(evt.target.value)}></input>
           &nbsp;&nbsp;
-          <button onClick={() => {console.log(newUser);setAllowlist((allowlist: any) => [...allowlist, {name: newUser, id: allowlist.length}]); setNewUser(null)}}>share</button>
-          <br/>
-          {
-            userOffline && <p style={{color: 'red'}}>user offline</p>
+          <button onClick={async () => {
+            await share()
           }
+            }>share</button>
+          <br/>
+          {userOffline && <p style={{color: 'red'}}>user offline</p>}
+          {/* TODO: delete from localstorage and in memory*/}
           <ul>{allowlist.map((person: any, id: any) => {
-            return <li style={{textAlign: 'center', width: '332px', padding: '5px'}}>{person.name} <span id='x-remove' style={{float: 'right', cursor: 'pointer'}} onClick={() => setAllowlist((prevItems: any) => prevItems.filter((item: any) => item.id !== id))}>❌</span></li>
+            return <li style={{textAlign: 'center', width: '332px', padding: '5px'}}>
+              <div className="circle"></div>&nbsp;
+              {person.name} <span id='x-remove' style={{float: 'right', cursor: 'pointer'}} onClick={() => setAllowlist((prevItems: any) => prevItems.filter((item: any) => item.id !== id))}>❌</span></li>
           })}</ul>
         </div>
       }
@@ -564,38 +656,6 @@ function App() {
                   return item.key !== canDelete
                 }))}}>delete</button></>}
               </CollapsibleCard>
-              {isSignedIn && <><br/><CollapsibleCard
-                title={'reminders'}
-                key={0}
-                style={{
-                  position: "relative",
-                }}
-              >
-                <div style={{margin: 'auto'}}>
-                  <span id="menu" style={{cursor: 'pointer', textDecoration: ''}}onClick={() => setMenu(3)}>⏲ reminders</span>
-                  <br/>
-                  <br/>
-                  {
-                    <>
-                    <input
-                    type="datetime-local"
-                    id="meeting-time"
-                    name="meeting-time"
-                    value={reminderTime}
-                    onChange={(evt: any) => onChangeReminderTime(evt.target.value)}
-                    />
-                    <br/>
-                    <br/>
-                    <textarea style={{height: '60px', width: '175px'}} onChange={(evt: any) => setReminderNote(evt.target.value)}></textarea>
-                    <br/>
-                    <br/>
-
-                    <button onClick={saveReminder}>set reminder</button>
-                    <br/>
-                    </>
-                  }
-                </div>
-              </CollapsibleCard> </>}
               <br/>
               <CollapsibleCard
                 passedInheight={'0'}
@@ -604,15 +664,15 @@ function App() {
                 style={{
                   position: "relative",
                   height: '180px',
-                  margin: '20px'
+                  margin: '20px',
+                  paddingLeft: '-70px'
                 }}
               >
                 <button onClick={() => addEmergence()}>emergence</button>
                 &nbsp;
-                &nbsp;
                 <button onClick={() => addWindow()}>window</button>
                 &nbsp;
-                &nbsp;
+                <button onClick={() => addRebound()}>rebound</button>
                 <br/>
                 <br/>
               </CollapsibleCard>

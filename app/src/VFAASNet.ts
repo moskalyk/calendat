@@ -2,9 +2,14 @@ import { io } from "socket.io-client";
 
 class VFAASNetSocket {
     socket: any;
+    notConnected: any = false;
 
     constructor(url: any){
-      this.socket = io(url)
+      try{
+        this.socket = io(url)
+      }catch(err){
+        this.notConnected = true;
+      }
     }
     
     send(channel: any, message: any) {
@@ -23,9 +28,12 @@ class VFAASNet {
     this.webSocket = new VFAASNetSocket(`http://${host}:${port}` )
   }
 
-  aBoot() {
-    this.webSocket.on('connection', () => console.log('connection created'))
-    return this
+  aBoot(cb: any) {
+    const msg = 'connection created'
+    this.webSocket.on('connect', () => {
+      cb({boot: this, msg: msg})
+      // console.log()
+    })
   }
 
   aPath(func: (message: any) => void) {
