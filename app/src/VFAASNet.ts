@@ -24,8 +24,8 @@ class VFAASNetSocket {
 class VFAASNet {
   webSocket: any;
 
-  constructor({ host, port }: any) {
-    this.webSocket = new VFAASNetSocket(`http://${host}:${port}` )
+  constructor({protocol, host, port }: any) {
+    this.webSocket = new VFAASNetSocket(`${protocol}://${host}:${port}` )
   }
 
   aBoot(cb: any) {

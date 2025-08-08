@@ -191,25 +191,9 @@ function App() {
     otpEmailSend&&setTimeout(async () => {
 
     let otpExpiry = JSON.parse(localStorage.getItem('otp-expiry')!)
-    console.log(otpExpiry)
     let polygons;
 
-    // const res = await fetch(`${HOST}/run`, {
-    //         method: 'POST',
-    //         headers: {
-    //             "Content-Type": "application/json",
-    //           },
-    //         body: JSON.stringify({
-    //             bundleID: "OTPCodeValidation", // TODO: use unique bundle id to network
-    //             functionName: 'serverless',
-    //             args: [otpEmailSend,otpExpiry.otp[0]],
-    //         })
-    //     })
-    //     const resJson = await res.json()
-    //     console.log(resJson)
-
     if((new Date().getTime() < otpExpiry.expiry)){
-      console.log('getting shapes')
       const response = await fetch(`${HOST}/run`, {
               method: 'POST',
               headers: {
@@ -223,11 +207,9 @@ function App() {
           })
 
       let shapes = (await response.json()).response[2]
-      console.log(shapes)
 
       if(shapes.length > 0){
         polygons = JSON.parse(shapes).polygons
-        console.log(polygons)
         setShapes([])
       }
 
@@ -240,8 +222,6 @@ function App() {
 
       for(let i = 0; i < polygons.length; i++){
         const polygon = polygons[i].geo
-        console.log(polygon)
-        console.log(polygons[i].color)
 
         let color; 
 
@@ -257,7 +237,6 @@ function App() {
         color = 'gold'
       }
 
-      console.log(polygon)
 
         tempShapes.push(
           //@ts-ignore
@@ -362,8 +341,6 @@ function App() {
   useEffect(() => {
     otpEmailSend && emailOTPLoading && setTimeout(async () => {
     let otpExpiry = JSON.parse(localStorage.getItem('otp-expiry')!)
-      console.log(otpExpiry)
-      console.log(otpEmailSend)
       if(otpExpiry){
         const res = await fetch(`${HOST}/run`, {
               method: 'POST',
@@ -379,7 +356,6 @@ function App() {
 
         const jsonRes = await res.json()
         let a = jsonRes.response[2]
-        console.log(a)
         a = a.replace(/'/g, '"');
         a = JSON.parse(a);
         setAllowlist(a.map((el: any,id: any) => {return {id: id, name: el}}))
@@ -390,8 +366,6 @@ function App() {
   useEffect(() => {
 otpEmailSend && setTimeout(async () => {
     let otpExpiry = JSON.parse(localStorage.getItem('otp-expiry')!)
-      console.log(otpExpiry)
-      console.log(otpEmailSend)
       if(otpExpiry){
         const res = await fetch(`${HOST}/run`, {
               method: 'POST',
@@ -407,14 +381,12 @@ otpEmailSend && setTimeout(async () => {
 
         const jsonRes = await res.json()
         let a = jsonRes.response[2]
-        console.log(a)
         a = a.replace(/'/g, '"');
         a = JSON.parse(a);
         setAllowlist(a.map((el: any,id: any) => {return {id: id, name: el}}))
       }
     }, 0)
 
-    console.log(allowlist)
   }, [counter, otpEmailSend])
 
   const [hasRecvEmail, setHasRecvEmail] = useState(false)
@@ -446,7 +418,6 @@ otpEmailSend && setTimeout(async () => {
         })
 
       const jsonRes = await res.json()
-      console.log(jsonRes)
       setOTPCodePrompt(jsonRes.response[0])
       setEmailOTPLoading(false)
 
@@ -494,7 +465,7 @@ otpEmailSend && setTimeout(async () => {
   }
   useEffect(() => {
 
-      vfaasNet = new VFAASNet({host: 'vfaas.ngrok.dev', port:''})
+      vfaasNet = new VFAASNet({protocol: 'https', host: 'vfaas.ngrok.dev', port:''})
 
       const ack = (ack: any) => {
         id = ack.datum
@@ -586,7 +557,7 @@ otpEmailSend && setTimeout(async () => {
   const deleteShape = async (canDelete: any) => {
     let otpExpiry = JSON.parse(localStorage.getItem('otp-expiry')!)
 
-    console.log(await (await fetch(`${HOST}/run`, {
+    await fetch(`${HOST}/run`, {
         method: 'POST',
         headers: {
             "Content-Type": "application/json",
@@ -596,7 +567,7 @@ otpEmailSend && setTimeout(async () => {
             functionName: 'serverless',
             args: [2025, otpEmailSend, otpExpiry.otp[0], month, canDelete],
         })
-    })).json());
+    });
     setCounter(1+counter)
   }
 
