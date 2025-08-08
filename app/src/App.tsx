@@ -193,7 +193,7 @@ function App() {
     let otpExpiry = JSON.parse(localStorage.getItem('otp-expiry')!)
     let polygons;
 
-      if(otpExpiry){
+      if(otpExpiry && 'otp' in  otpExpiry){
 
     if((new Date().getTime() < otpExpiry.expiry)){
       const response = await fetch(`${HOST}/run`, {
