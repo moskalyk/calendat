@@ -344,7 +344,7 @@ function App() {
   useEffect(() => {
     otpEmailSend && emailOTPLoading && setTimeout(async () => {
     let otpExpiry = JSON.parse(localStorage.getItem('otp-expiry')!)
-      if(otpExpiry){
+      if(otpExpiry && 'otp' in  otpExpiry){
         const res = await fetch(`${HOST}/run`, {
               method: 'POST',
               headers: {
