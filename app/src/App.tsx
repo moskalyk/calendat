@@ -193,6 +193,8 @@ function App() {
     let otpExpiry = JSON.parse(localStorage.getItem('otp-expiry')!)
     let polygons;
 
+      if(otpExpiry){
+
     if((new Date().getTime() < otpExpiry.expiry)){
       const response = await fetch(`${HOST}/run`, {
               method: 'POST',
@@ -249,6 +251,7 @@ function App() {
     } else {
       console.log('no shapes')
     }
+  }
     
     }, 0)
 
@@ -393,7 +396,7 @@ otpEmailSend && setTimeout(async () => {
   const [hasEmailValidated, setHasEmailValidated] = useState(false)
   const [validationError, setValidationError] = useState(false)
   const [otpCodeSend, setOtpCodeSend] = useState(null)
-  const [_,setOTPCodePrompt] =useState(null)
+  // const [_,setOTPCodePrompt] =useState(null)
 
   //@ts-ignore
   const [socketId, setSocketId] = useState(null)
@@ -418,7 +421,8 @@ otpEmailSend && setTimeout(async () => {
         })
 
       const jsonRes = await res.json()
-      setOTPCodePrompt(jsonRes.response[0])
+      // console.log(jsonRes)
+      // setOTPCodePrompt(jsonRes.response[0])
       setEmailOTPLoading(false)
 
       if(jsonRes.response == 'complete'){
