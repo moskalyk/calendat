@@ -17,6 +17,8 @@ let id: any;
 //@ts-ignore
 let userEmail: any;
 
+let HOST: string = 'https://v0.vfaas.ngrok.dev'
+
 const styles = {
   container: {
     margin: 'auto',
@@ -93,6 +95,7 @@ const CollapsibleCard = ({ title, children }: any) => {
 
 function App() {
   const [menu, setMenu] = useState(0)
+  const [otpEmailSend, setOtpEmailSend] = useState(null)
   const currentDate = new Date();
   const currentMonth = currentDate.getMonth()+1
   const [month, setMonth] = useState<any>(currentMonth)
@@ -115,8 +118,10 @@ function App() {
       console.log(e.id)
 
       for(let i = 0; i < shapes.length; i++){
+        console.log(shapes[i].key)
+        console.log(shapes[i].key == e.id)
         if(shapes[i].key == e.id){
-          setCanDelete(e.id)
+          setCanDelete(shapes[i].key)
         }
       }
 
@@ -146,23 +151,28 @@ function App() {
     const dateNumbers = []
     let index = 0
     let days;
+    let year = 0
+
+    if(month>12){
+      ++year
+    }
     // a hack, but a small one
-    days = daysInMonth(month-1, 2024)-priorMonthShifts[month-1]
+    days = daysInMonth(month-1, year+2024)-priorMonthShifts[month-1]
 
     let shift = shifts[month-1]
-    for(var i = ((daysInMonth(month-1, 2025))+(-6-shift)); i <= (daysInMonth(month-1, 2025)); i++) {
+    for(var i = ((daysInMonth(month-1, year+2025))+(-6-shift)); i <= (daysInMonth(month-1, 2025)); i++) {
       index++
       dateNumbers.push(<text x={7+(index%7 == 0 ? 6 : (index-1)%7)*100} y={23+Math.ceil(index/7)*100-100} fill="black">{days++}</text>)
     }
     index = 1
-    for(var  i = 1+shift; i <= (daysInMonth(month, 2025))+shift; i++) {
+    for(var  i = 1+shift; i <= (daysInMonth(month, year+2025))+shift; i++) {
       dateNumbers.push(<text x={7+(i%7 == 0 ? 6 : (i-1)%7)*100} y={123+Math.ceil(i/7)*100-100} fill="black">{index++}</text>)
     }
 
     shift = ((index-7)%7)+shift
     index = 1
     
-    for(var  i = 1+shift-1; i <= (daysInMonth(month, 2025))+shift; i++) {
+    for(var  i = 1+shift-1; i <= (daysInMonth(month, year+2025))+shift; i++) {
       dateNumbers.push(<text  x={7+(i%7 == 0 ? 6 : (i-1)%7)*100} y={523+Math.ceil(i/7)*100-100} fill="black">{index++}</text>)
     }
     setDates(dateNumbers)
@@ -178,171 +188,252 @@ function App() {
 
   useEffect(() => {
 
-    // TODO: change month and user / other to get polygons with selected colors data structure
-    const polygons = JSON.parse(localStorage.getItem(month)!)
-    setShapes([])
+    otpEmailSend&&setTimeout(async () => {
 
-    let color;
+    let otpExpiry = JSON.parse(localStorage.getItem('otp-expiry')!)
+    console.log(otpExpiry)
+    let polygons;
 
-    if(selectedColor == 0){
-      color = 'rgb(0, 255, 234)'
-    } else if(selectedColor == 1) {
-      color = 'rgb(164, 0, 164)'
-    }else if(selectedColor == 2) {
-      color = 'blue'
-    }else if(selectedColor == 3) {
-      color = 'rgb(255, 71, 86)'
-    }else if(selectedColor == 4) {
-      color = 'gold'
-    }
+    // const res = await fetch(`${HOST}/run`, {
+    //         method: 'POST',
+    //         headers: {
+    //             "Content-Type": "application/json",
+    //           },
+    //         body: JSON.stringify({
+    //             bundleID: "OTPCodeValidation", // TODO: use unique bundle id to network
+    //             functionName: 'serverless',
+    //             args: [otpEmailSend,otpExpiry.otp[0]],
+    //         })
+    //     })
+    //     const resJson = await res.json()
+    //     console.log(resJson)
 
-    if(!polygons){
+    if((new Date().getTime() < otpExpiry.expiry)){
+      console.log('getting shapes')
+      const response = await fetch(`${HOST}/run`, {
+              method: 'POST',
+              headers: {
+                  "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                  bundleID: "RetrieveShape", // TODO: use unique bundle id to network
+                  functionName: 'serverless',
+                  args: [2025, otpEmailSend, otpExpiry.otp[0],month],
+              })
+          })
+
+      let shapes = (await response.json()).response[2]
+      console.log(shapes)
+
+      if(shapes.length > 0){
+        polygons = JSON.parse(shapes).polygons
+        console.log(polygons)
+        setShapes([])
+      }
+
+    // let color;
+    if(!polygons ){
       setShapes([])
-      localStorage.setItem(month, JSON.stringify([]))
-    }else {
+      localStorage.setItem(month, JSON.stringify([{geo:[], color: null}]))
+    }else if(polygons.length > 0 && polygons[0].geo.length > 0){
       const tempShapes = []
+
       for(let i = 0; i < polygons.length; i++){
+        const polygon = polygons[i].geo
+        console.log(polygon)
+        console.log(polygons[i].color)
+
+        let color; 
+
+        if(polygons[i].color == 0){
+        color = 'rgb(0, 255, 234)'
+      } else if(polygons[i].color == 1) {
+        color = 'rgb(164, 0, 164)'
+      }else if(polygons[i].color == 2) {
+        color = 'blue'
+      }else if(polygons[i].color == 3) {
+        color = 'rgb(255, 71, 86)'
+      }else if(polygons[i].color == 4) {
+        color = 'gold'
+      }
+
+      console.log(polygon)
+
         tempShapes.push(
           //@ts-ignore
-          <polygon key={i} id={i} points={polygons[i]} style={{stroke: color, fill:'transparent'}} />
+          <polygon key={polygon} id={polygon} points={polygon} style={{stroke: color, fill:'transparent'}} />
         )
       }
 
       setShapes(tempShapes)
     }
-  }, [month, selectedColor])
-
-  const addWindow = () => {
-
-    // create a temporary variable
-    const tempShapes = shapes
-
-    // create a reactable variable
-    setCounter(counter+1)
-
-    // add shapes to temprorary structure
-    tempShapes.push(
-      //@ts-ignore
-      <polygon id={tempShapes.length-1} points={`${50+100*addingXShape+","+(30+(addingYShape)*100)} ${150+100*addingXShape+","+(150+(addingYShape)*100)} ${50+100*(addingXShape-1)+","+(150+(addingYShape)*100)}`} style={{stroke: 'purple', fill:'transparent'}} />
-    )
-
-    // get polygons from localstorage
-    const polygons = JSON.parse(localStorage.getItem(month)!)
-  
-    // add new shape and coords
-    polygons.push(`${50+100*addingXShape+","+(30+(addingYShape)*100)} ${150+100*addingXShape+","+(150+(addingYShape)*100)} ${50+100*(addingXShape-1)+","+(150+(addingYShape)*100)}`)
+    } else {
+      console.log('no shapes')
+    }
     
-    // set back to local storage
-    localStorage.setItem(month,JSON.stringify(polygons))
+    }, 0)
 
-    // render
-    setShapes(tempShapes)
+  }, [month, selectedColor, counter, otpEmailSend])
+
+  const addWindow = async () => {
+
+    let addingShape= `${50+100*addingXShape+","+(30+(addingYShape)*100)} ${150+100*addingXShape+","+(150+(addingYShape)*100)} ${50+100*(addingXShape-1)+","+(150+(addingYShape)*100)}`
+
+    if(otpEmailSend){
+      let otpExpiry = JSON.parse(localStorage.getItem('otp-expiry')!)
+
+      await fetch(`${HOST}/run`, {
+            method: 'POST',
+            headers: {
+                "Content-Type": "application/json",
+              },
+            body: JSON.stringify({
+                bundleID: "StoreShape", // TODO: use unique bundle id to network
+                functionName: 'serverless',
+                args: [2025, otpEmailSend,  otpExpiry.otp[0], month, addingShape, selectedColor],
+            })
+        })
+    }
     setAddShapes(false)
+    setCounter(counter+1)
   }
   
-  const addEmergence = () => {
+  const addEmergence = async () => {
+      setCounter(counter+1)
+
+      const tempShapes = shapes
+
+      tempShapes.push(
+        //@ts-ignore
+        <polygon id={tempShapes.length-1} points={`${50+100*addingXShape+","+(30+(addingYShape)*100)} ${250+100*addingXShape+","+(30+(addingYShape)*100)} ${250+100*(addingXShape-1)+","+(150+(addingYShape)*100)}`} style={{stroke: 'purple', fill:'transparent'}} />
+      )
+
+      let otpExpiry = JSON.parse(localStorage.getItem('otp-expiry')!)
+      let addingShape= `${50+100*addingXShape+","+(30+(addingYShape)*100)} ${250+100*addingXShape+","+(30+(addingYShape)*100)} ${250+100*(addingXShape-1)+","+(150+(addingYShape)*100)}`
+
+      await fetch(`${HOST}/run`, {
+            method: 'POST',
+            headers: {
+                "Content-Type": "application/json",
+              },
+            body: JSON.stringify({
+                bundleID: "StoreShape", // TODO: use unique bundle id to network
+                functionName: 'serverless',
+                args: [2025, otpEmailSend,  otpExpiry.otp[0], month, addingShape, selectedColor],
+            })
+        })
+
+      setShapes(tempShapes)
+      setAddShapes(false)
+      setCounter(1+counter)
+    }
+
+    const addRebound = async () => {
+    let otpExpiry = JSON.parse(localStorage.getItem('otp-expiry')!)
+
+    let addingShape= `${100+50*addingXShape+","+(50+(addingYShape)*100)} ${200+50*addingXShape+","+(20+(addingYShape)*100)} ${300+50*addingXShape+","+(50+(addingYShape)*100)} ${200+50*addingXShape+","+(80+(addingYShape)*100)}`
+
+     await fetch(`${HOST}/run`, {
+          method: 'POST',
+          headers: {
+              "Content-Type": "application/json",
+            },
+          body: JSON.stringify({
+              bundleID: "StoreShape", // TODO: use unique bundle id to network
+              functionName: 'serverless',
+              args: [2025, otpEmailSend,  otpExpiry.otp[0], month, addingShape, selectedColor],
+          })
+      })
+    setAddShapes(false)
     setCounter(counter+1)
 
-    const tempShapes = shapes
-
-    tempShapes.push(
-      //@ts-ignore
-      <polygon id={tempShapes.length-1} points={`${50+100*addingXShape+","+(30+(addingYShape)*100)} ${250+100*addingXShape+","+(30+(addingYShape)*100)} ${250+100*(addingXShape-1)+","+(150+(addingYShape)*100)}`} style={{stroke: 'purple', fill:'transparent'}} />
-    )
-
-    const polygons = JSON.parse(localStorage.getItem(month)!)
-
-    polygons.push(`${50+100*addingXShape+","+(30+(addingYShape)*100)} ${250+100*addingXShape+","+(30+(addingYShape)*100)} ${250+100*(addingXShape-1)+","+(150+(addingYShape)*100)}`)
-
-    localStorage.setItem(month,JSON.stringify(polygons))
-
-    setShapes(tempShapes)
-    setAddShapes(false)
-  }
-
-    const addRebound = () => {
-    setCounter(counter+1)
-    const tempShapes = shapes
-
-    tempShapes.push(
-      //@ts-ignore
-      // <polygon id={tempShapes.length-1} points={`${50+100*addingXShape+","+(30+(addingYShape)*100)} ${250+100*addingXShape+","+(30+(addingYShape)*100)} ${250+100*(addingXShape-1)+","+(150+(addingYShape)*100)}`} style={{stroke: 'purple', fill:'transparent'}} />
-      
-      <polygon points={`${100+50*addingXShape+","+(50+(addingYShape)*100)} ${200+50*addingXShape+","+(20+(addingYShape)*100)} ${300+50*addingXShape+","+(50+(addingYShape)*100)} ${200+50*addingXShape+","+(80+(addingYShape)*100)}`} style={{stroke: 'purple', fill:'transparent'}} />
-    )
-    setShapes(tempShapes)
-          setAddShapes(false)
-           const polygons = JSON.parse(localStorage.getItem(month)!)
-
-    polygons.push(`${100+50*addingXShape+","+(50+(addingYShape)*100)} ${200+50*addingXShape+","+(20+(addingYShape)*100)} ${300+50*addingXShape+","+(50+(addingYShape)*100)} ${200+50*addingXShape+","+(80+(addingYShape)*100)}`)
-
-    localStorage.setItem(month,JSON.stringify(polygons))
-
-    setShapes(tempShapes)
-    setAddShapes(false)
 
   }
-
-  // const addTree = () => {
-  //   setCounter(counter+1)
-
-  //   const tempShapes = shapes
-  //    tempShapes.push(
-  //     <polygon points="950,30 850,150 850,450 950,550 1050,450 1050,150 " style={{stroke: 'purple', fill:'transparent'}} />
-  //   )
-  //   setShapes(tempShapes)
-  //   setAddShapes(false)
-
-  // }
 
   const saveNotes = () => {
     localStorage.setItem(JSON.stringify(addingXShape+":"+addingYShape),notes)
     setAddShapes(null)
   }
 
-  const [allowlist, setAllowlist] = useState<any>([{id: 0, name: 'morgan.moskalyk@protonmail.ch'}])
+  const [allowlist, setAllowlist] = useState<any>([])
   const [newUser, setNewUser] = useState<any>(null)
+  const [emailOTPLoading, setEmailOTPLoading] = useState(false)
 
   useEffect(() => {
-  }, [newUser, allowlist, notes])
+    otpEmailSend && emailOTPLoading && setTimeout(async () => {
+    let otpExpiry = JSON.parse(localStorage.getItem('otp-expiry')!)
+      console.log(otpExpiry)
+      console.log(otpEmailSend)
+      if(otpExpiry){
+        const res = await fetch(`${HOST}/run`, {
+              method: 'POST',
+              headers: {
+                  "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                  bundleID: "RetrieveAllowList", // TODO: use unique bundle id to network
+                  functionName: 'serverless',
+                  args: [otpEmailSend, otpExpiry.otp[0]],
+              })
+          })
+
+        const jsonRes = await res.json()
+        let a = jsonRes.response[2]
+        console.log(a)
+        a = a.replace(/'/g, '"');
+        a = JSON.parse(a);
+        setAllowlist(a.map((el: any,id: any) => {return {id: id, name: el}}))
+      }
+    }, 0)
+  }, [emailOTPLoading, newUser, otpEmailSend, notes, counter])
 
   useEffect(() => {
+otpEmailSend && setTimeout(async () => {
+    let otpExpiry = JSON.parse(localStorage.getItem('otp-expiry')!)
+      console.log(otpExpiry)
+      console.log(otpEmailSend)
+      if(otpExpiry){
+        const res = await fetch(`${HOST}/run`, {
+              method: 'POST',
+              headers: {
+                  "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                  bundleID: "RetrieveAllowList", // TODO: use unique bundle id to network
+                  functionName: 'serverless',
+                  args: [otpEmailSend, otpExpiry.otp[0]],
+              })
+          })
 
+        const jsonRes = await res.json()
+        let a = jsonRes.response[2]
+        console.log(a)
+        a = a.replace(/'/g, '"');
+        a = JSON.parse(a);
+        setAllowlist(a.map((el: any,id: any) => {return {id: id, name: el}}))
+      }
+    }, 0)
 
-    // await wait(1000)
-    // console.log(vfaasNet.notConnected)
-  }, [])
+    console.log(allowlist)
+  }, [counter, otpEmailSend])
 
-  //@ts-ignore
   const [hasRecvEmail, setHasRecvEmail] = useState(false)
   const [hasEmailValidated, setHasEmailValidated] = useState(false)
   const [validationError, setValidationError] = useState(false)
-  const [otpEmailSend, setOtpEmailSend] = useState(null)
   const [otpCodeSend, setOtpCodeSend] = useState(null)
-  // const [reminderTime, setReminderTime] = useState('2025-06-18T00:00')
-  // const [reminderNote, setReminderNote] = useState(null)
-  const [OTPCodePrompt,setOTPCodePrompt] =useState(null)
+  const [_,setOTPCodePrompt] =useState(null)
 
   //@ts-ignore
   const [socketId, setSocketId] = useState(null)
-  const [emailOTPLoading, setEmailOTPLoading] = useState(false)
-  // const [userEmail, setUserEmail] = useState(null)
 
   const sendEmail = async () => {
     setEmailOTPLoading(true)
     vfaasNet.webSocket.send('init', {id: socketId, email: otpEmailSend})
-    console.log(otpEmailSend)
-    // setUserEmail(otpEmailSend)
     userEmail = otpEmailSend
-
-    // get expiry from local storage
     let otpExpiry = JSON.parse(localStorage.getItem('otp-expiry')!)
 
-    console.log(otpExpiry)
-
-    // see if expired
     if(otpExpiry==null||(otpExpiry && (new Date().getTime() > otpExpiry.expiry))){
-      const res = await fetch('http://localhost:3000/run', {
+      const res = await fetch(`${HOST}/run`, {
             method: 'POST',
             headers: {
                 "Content-Type": "application/json",
@@ -356,21 +447,18 @@ function App() {
 
       const jsonRes = await res.json()
       console.log(jsonRes)
-      setOTPCodePrompt(jsonRes.response)
+      setOTPCodePrompt(jsonRes.response[0])
       setEmailOTPLoading(false)
 
       if(jsonRes.response == 'complete'){
         setHasEmailValidated(true)
         setHasRecvEmail(true)
-        console.log('test')
       }else {
         setHasRecvEmail(true)
         const now = new Date();
-
         // Add 11 minutes to the current time
         now.setMinutes(now.getMinutes() + 11);
         localStorage.setItem('otp-expiry', JSON.stringify({otp: jsonRes.response, expiry: now.getTime()}))
-        // setOtpEmailSend(null)
       }
     } else {
       console.log('else')
@@ -382,7 +470,7 @@ function App() {
   }
 
   const sendValidation = async () => {
-      const res = await fetch('http://localhost:3000/run', {
+      const res = await fetch(`${HOST}/run`, {
             method: 'POST',
             headers: {
                 "Content-Type": "application/json",
@@ -394,101 +482,83 @@ function App() {
             })
         })
         const resJson = await res.json()
-        console.log(resJson)
-      if(!Boolean(resJson.response)){
+      if(!Boolean(resJson.response[0])){
         setValidationError(true)
       } else {
+        setCounter(1+counter)
         setHasEmailValidated(true)
         setIsSignedIn(true)
       }
       setOtpCodeSend(null)
 
   }
-
-  // const onChangeReminderTime = (evt: any) => {
-  //   setReminderTime(evt)
-  // }
-
-  // const saveReminder = async () => {
-  //   const res = await fetch('http://localhost:3000/run', {
-  //         method: 'POST',
-  //         headers: {
-  //             "Content-Type": "application/json",
-  //           },
-  //         body: JSON.stringify({
-  //             bundleID: "ReminderSet", // TODO: use unique bundle id to network
-  //             functionName: 'serverless',
-  //             args: [otpEmailSend, reminderTime, reminderNote],
-  //         })
-  //     })
-  //     const resJson = await res.json()
-  //     console.log(resJson)
-  // }
-
-
   useEffect(() => {
 
-    // if(runOnce == 0) {
-      // runOnce++
-      vfaasNet = new VFAASNet({host: 'localhost', port: 8079})
-
-      // const onPeerMessage = (message: any) => {
-      //   // use message
-      //   console.log(message)
-      //   vfaasNet.webSocket.send('message', {datum: 'howdy'})
-      // }
+      vfaasNet = new VFAASNet({host: 'vfaas.ngrok.dev', port:''})
 
       const ack = (ack: any) => {
         id = ack.datum
         setSocketId(ack.datum)
       }
 
-      const init = (message: any) => {
-        console.log(message)
-        console.log(socketId)
-        console.log(otpEmailSend)
-        vfaasNet.webSocket.send('init', {id: socketId, email: otpEmailSend})
-      }
-
       const sharing = (data: any) => {
-        // check if offline or not
-        // check if initiator or not
 
-        //TODO: store in localstorage in a certain data structure
-        console.log(data)
-        console.log(userEmail)
-        console.log('in sharing callback')
+        const polygons = [1,2,3,4,5,6,7,8,9,10,11,12].map((el: any) => JSON.parse(localStorage.getItem(el)!))
 
-        // TODO: check if email is in allow list, if so, pass along sharing
-        if(JSON.parse(data).isInitiator) vfaasNet.webSocket.send('sharing', {color: selectedColor, isInitiator: false, initiator: JSON.parse(data).initiator, email: JSON.parse(data).initiator, geometry: [1,2,3,4,5,6,7,8,9,10,11,12].map(el => localStorage.getItem(JSON.stringify(el)))})
+        polygons.map((polygonMonth: any, index: any) => {
+          
+          if(polygonMonth){
+
+            let tempPolygons: any = JSON.parse(localStorage.getItem((index+1))!)
+            if(!tempPolygons) tempPolygons = []
+            try{
+              JSON.parse(JSON.parse(data).geometry[index])&&JSON.parse(JSON.parse(data).geometry[index]).geo.map((el: any) => {
+                if(el){
+                  tempPolygons.push(el)
+                }
+              })
+            }catch(err){
+
+            }
+
+            const storedPolygons: any = JSON.parse(localStorage.getItem(month)!)
+            if(storedPolygons && storedPolygons.length > 0){
+              tempPolygons.map((tPolygons:any) => {
+                storedPolygons.push({geo: tPolygons, color: JSON.parse(data).color})
+              })
+              localStorage.setItem((month),JSON.stringify(storedPolygons))
+            }
+          }
+        }) 
+        
+        if(JSON.parse(data).isInitiator) vfaasNet.webSocket.send('sharing', {color: selectedColor, isInitiator: false, initiator: JSON.parse(data).initiator, email: JSON.parse(data).initiator, geometry: [1,2,3,4,5,6,7,8,9,10,11,12].map((el: any) => localStorage.getItem(el))})
       }
 
       vfaasNet.aPath(ack)
-      vfaasNet.aPath(init)
       vfaasNet.aPath(sharing)
-
-      vfaasNet.aBoot()
-    // }
+      vfaasNet.aBoot(() => {
+        console.log('brrp booted...')
+      })
   }, [])
 
-  // TODO: create a local storage listener
-
-  // TODO: later create hex input for colors
-
-  // TODO: show user email on shape inspection
-
   const share = async () => {
-    console.log('gunna send')
-    const polygons = [1,2,3,4,5,6,7,8,9,10,11,12].map((el: any) => JSON.parse(localStorage.getItem(el)!))
-    console.log({isInitiator: true, initiator: userEmail, email: newUser, geometry: polygons})
+     await fetch(`${HOST}/run`, {
+            method: 'POST',
+            headers: {
+                "Content-Type": "application/json",
+              },
+            body: JSON.stringify({
+                bundleID: "AddToAllowList", // TODO: use unique bundle id to network
+                functionName: 'serverless',
+                args: [otpEmailSend, JSON.parse(localStorage.getItem('otp-expiry')!).otp[0]!,newUser],
+            })
+        })
 
-    await vfaasNet.webSocket.send('sharing', {isInitiator: true, initiator: userEmail, email: newUser, geometry: polygons, color: selectedColor})
     setAllowlist((allowlist: any) => [...allowlist, {name: newUser, id: allowlist.length}]); 
     setNewUser(null)
   }
 
   useEffect(()=>{
-
   },[socketId, otpCodeSend,otpEmailSend])
   // @ts-ignore
   const [userOffline, setUserOffline] = useState(false)
@@ -496,9 +566,43 @@ function App() {
   const [isSignedIn, setIsSignedIn] = useState(false)
   const [hoverMenu, setHoverMenu] = useState(false)
 
+  const removeFromList = async (friendEmail: any) => {
+    let otpExpiry = JSON.parse(localStorage.getItem('otp-expiry')!)
+
+    await fetch(`${HOST}/run`, {
+        method: 'POST',
+        headers: {
+            "Content-Type": "application/json",
+          },
+        body: JSON.stringify({
+            bundleID: "RemoveFromAllowList", // TODO: use unique bundle id to network
+            functionName: 'serverless',
+            args: [otpEmailSend, otpExpiry.otp[0], friendEmail],
+        })
+    })
+    setCounter(counter+1)
+  }
+
+  const deleteShape = async (canDelete: any) => {
+    let otpExpiry = JSON.parse(localStorage.getItem('otp-expiry')!)
+
+    console.log(await (await fetch(`${HOST}/run`, {
+        method: 'POST',
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+            bundleID: "DeleteShape", // TODO: use unique bundle id to network
+            functionName: 'serverless',
+            args: [2025, otpEmailSend, otpExpiry.otp[0], month, canDelete],
+        })
+    })).json());
+    setCounter(1+counter)
+  }
+
   useEffect(() => {
-    localStorage.setItem(JSON.stringify('selected color'), JSON.stringify(selectedColor))
-  }, [selectedColor])
+
+  }, [canDelete])
  
   return (
     <>
@@ -523,10 +627,6 @@ function App() {
         menu == 3 &&<div>
           <div style={{position: `fixed`, left: '30%', cursor: 'pointer'}} onClick={() => setMenu(0)}>{`< back`}</div>
           {!hasEmailValidated && <><p>sign in 
-            {/* &nbsp; */}
-            {/* {<>
-          (<div className="circle">
-</div> <span>offline)</span></>} */}
 </p>
           <hr style={{width: '50px', marginBottom: '15px'}}/></>}
           
@@ -544,7 +644,6 @@ function App() {
                 </>:
               <>
               <p>?validate your otp code</p>
-              <p>{OTPCodePrompt}</p>
               {/* @ts-ignore" */}
               <input  style={{border: '0px', padding: '8px',borderRadius: '3px',height: '22px'}} placeholder='otp code' value={otpCodeSend} onChange={(evt) => setOtpCodeSend(evt.target.value)}></input>
               <button style={{height: '38px'}} onClick={() => sendValidation()}>validate otp</button>
@@ -554,7 +653,6 @@ function App() {
             
           }
           </> : <>
-          {/* TODO: use secure otp password session stored in browser cookie, maybe jwt */}
           <p>validate your email</p>
           {
               emailOTPLoading 
@@ -582,7 +680,6 @@ function App() {
           <p>calenda(t) themes</p>
           <hr style={{width: '50px', marginBottom: '15px'}}/>
           <div style={{margin: 'auto', display: 'inline-block'}}>
-
           <button className="circle-button-1" style={{border: selectedColor == 0 ? '1px solid black':'', height: selectedColor == 0 ? '38px': ''}}  onClick={() => setSelectedColor(0)}></button>
           <button className="circle-button-2" style={{border: selectedColor == 1 ? '1px solid black':'', height: selectedColor == 1 ? '38px': ''}} onClick={() => setSelectedColor(1)}></button>
           <button className="circle-button-3" style={{border: selectedColor == 2 ? '1px solid black':'', height: selectedColor == 2 ? '38px': ''}} onClick={() => setSelectedColor(2)}></button>
@@ -603,11 +700,9 @@ function App() {
             }>share</button>
           <br/>
           {userOffline && <p style={{color: 'red'}}>user offline</p>}
-          {/* TODO: delete from localstorage and in memory*/}
-          <ul>{allowlist.map((person: any, id: any) => {
+          <ul>{allowlist.map((person: any) => {
             return <li style={{textAlign: 'center', width: '332px', padding: '5px'}}>
-              <div className="circle"></div>&nbsp;
-              {person.name} <span id='x-remove' style={{float: 'right', cursor: 'pointer'}} onClick={() => setAllowlist((prevItems: any) => prevItems.filter((item: any) => item.id !== id))}>❌</span></li>
+              {person.name} <span id='x-remove' style={{float: 'right', cursor: 'pointer'}} onClick={() => removeFromList(person)}>❌</span></li>
           })}</ul>
         </div>
       }
@@ -626,7 +721,7 @@ function App() {
           <br/>
       {menu == 0 && 
       <main style={{ padding: 10 }}>
-        <span><button id='controls' onClick={() => setMonth(month!-1)}>prev</button></span><span style={{display: 'inline-block'}}><p>&nbsp;&nbsp;{months[month-1]}&nbsp;&nbsp;</p></span><span><button id='controls' onClick={() => {setMonth(month!+1)}}>next</button></span>
+        <span><button id='controls' onClick={() => setMonth(month!-1)}>prev</button></span><span style={{display: 'inline-block'}}><p>&nbsp;&nbsp;{months[(month-1)%12]}&nbsp;&nbsp;</p></span><span><button id='controls' onClick={() => {setMonth(month!+1)}}>next</button></span>
           <br/>
           <br/>
           {
@@ -647,15 +742,19 @@ function App() {
 
                   <button onClick={() => saveNotes()}>&nbsp;save&nbsp;</button>
                 </div>
-                {canDelete && <><button style={{background: 'red'}} onClick={() => {setCanDelete(false);setShapes((prevItems: any) => prevItems.filter((item: any) => {
-                  if(item.key === canDelete){
-                    let polygons = JSON.parse(localStorage.getItem(month)!)
-                    delete polygons[item.key]
-                    polygons = polygons.filter((el: any) => el == null)
-                    localStorage.setItem(month, JSON.stringify(polygons))
-                  }
-                  return item.key !== canDelete
-                }))}}>delete</button></>}
+                {canDelete && <><button style={{background: 'red'}} onClick={() => {deleteShape(canDelete) 
+                
+                // setCanDelete(false);setShapes((prevItems: any) => prevItems.filter((item: any) => {
+                //   if(item.key === canDelete){
+                //     let polygons = JSON.parse(localStorage.getItem(month)!)
+                //     delete polygons[item.key]
+                //     polygons = polygons.filter((el: any) => el == null)
+                //     localStorage.setItem(month, JSON.stringify(polygons))
+                //   }
+                //   return item.key !== canDelete
+                // }))
+                }
+                }>delete</button></>}
               </CollapsibleCard>
               <br/>
               <CollapsibleCard

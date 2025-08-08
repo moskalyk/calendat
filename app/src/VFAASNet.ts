@@ -32,7 +32,6 @@ class VFAASNet {
     const msg = 'connection created'
     this.webSocket.on('connect', () => {
       cb({boot: this, msg: msg})
-      // console.log()
     })
   }
 
